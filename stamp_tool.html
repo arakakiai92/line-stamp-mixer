@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LINE Sales Analytics Pro - Mixer</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/upng-js/2.1.0/UPNG.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #ffffff; font-family: sans-serif; }
+        .preview-container { position: relative; width: 320px; height: 270px; touch-action: none; }
+    </style>
+</head>
+<body class="text-gray-800 pb-4">
+
+    <header class="bg-[#00C300] text-white shadow-md sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto flex items-center justify-between px-4">
+            <div class="flex items-center">
+                <img src="top-left.png" alt="シーサーアイコン" class="h-16 w-auto block object-contain">
+                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro</h1>
+            </div>
+            <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
+                <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    🔗スタンプ/絵文字 ZIPメーカー
+                </a>
+                <a href="https://arakakiai92.github.io/-arakakiai92-line-sales-analytics-lite/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    📊売上分析簡易版
+                </a>
+                <a href="https://sales-graph-analyzer.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    📊売上スクショ分析
+                </a>
+                
+            </div>
+        </div>
+    </header>
+    
+    <main class="p-4 max-w-6xl mx-auto mt-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-5">
+                <h2 class="text-base font-bold text-gray-700 border-b pb-2 flex items-center gap-2">
+                    🔧 アニメスタンプ合成（素材設定）
+                </h2>
+                
+                <div class="space-y-1">
+                    <label class="block text-sm font-bold text-gray-700">1. キャラクターAPNG（動くPNG）:</label>
+                    <input type="file" id="char-input" accept="image/png" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                        file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
+                        hover:file:bg-green-100 cursor-pointer transition" />
+                </div>
+                
+                <div class="p-4 bg-[#fff9e6] border border-[#ffe0b2] rounded-xl space-y-2">
+                    <label class="block text-sm font-bold text-[#b78103] flex items-center gap-1">
+                        🔎 キャラクターの大きさ調節
+                    </label>
+                    <div class="flex items-center gap-4">
+                        <input type="range" id="scale-slider" min="50" max="200" value="100" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f59e0b]">
+                        <span id="scale-value" class="text-sm font-black text-[#b78103] min-w-[45px] text-right">100%</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-1 border-t pt-3">
+                    <label class="block text-sm font-bold text-gray-700">2. 背景画像（静止画PNG）:</label>
+                    <input type="file" id="bg-input" accept="image/png" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                        file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
+                        hover:file:bg-green-100 cursor-pointer transition" />
+                </div>
+
+                <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
+                    <span class="font-bold text-gray-600">出力形式:</span>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="format" value="apng" checked class="text-[#00C300] focus:ring-[#00C300]">
+                        <span class="ml-2 font-bold text-gray-700">APNG (.png)</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="format" value="gif" class="text-[#00C300] focus:ring-[#00C300]">
+                        <span class="ml-2 font-bold text-gray-700">GIF (.gif)</span>
+                    </label>
+                </div>
+
+                <div class="pt-2">
+                    <button id="export-btn" disabled class="w-full py-3.5 px-4 font-black text-white bg-[#00C300] hover:bg-[#009900] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all duration-200 text-center text-base active:scale-[0.98]">
+                        ⚡ アニメスタンプを合成して保存
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+                <h2 class="text-sm md:text-base font-bold text-gray-700 border-b pb-2 mb-4 w-full text-left flex justify-between items-center">
+                    <span>🎬 仕上がりリアルタイムプレビュー</span>
+                    <span class="text-xs text-gray-400 font-normal">枠内をドラッグで位置調整</span>
+                </h2>
+                
+                <div class="preview-container border-2 border-dashed border-[#0071e3] rounded-lg overflow-hidden bg-white shadow-inner">
+                    <img id="bg-preview" src="" alt="背景" class="w-full height-full object-contain absolute top-0 left-0 z-10 pointer-events-none" style="display:none; width:320px; height:270px;">
+                    <div id="char-wrapper" class="absolute z-20 top-0 left-0 w-full h-full cursor-move flex justify-center align-items-center" style="display:none; margin-left: 0px; margin-top: 0px; width:320px; height:270px;">
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
+                    ※キャラクターをドラッグ、または上のスライダーを調整したあと、<br>
+                    指やマウスを離すと最新の状態でアニメーションが自動再開します。
+                </p>
+            </div>
+            
+        </div>
+        
+    </main>
+
+    <footer class="max-w-6xl mx-auto px-4 py-6 text-xs text-gray-400 border-t border-gray-100 mt-12 flex flex-col sm:flex-row justify-end items-center sm:items-end gap-2">
+        <p class="leading-none pb-0.5">© 2026 <a href="https://store.line.me/search/ja?q=arakakiai" target="_blank" rel="noopener noreferrer" class="text-[#00C300] hover:text-[#009900] transition font-bold no-underline">ARAKAKIAIworks</a>. All Rights Reserved.<a href="https://note.com/arakakiai_works" target="_blank">🗒️</a></p>
+        <img src="bottom-right.png" alt="シーサーロゴ" class="h-9 w-auto object-contain block">
+    </footer>
+
+    <script>
+        let charFile = null;
+        let currentX = 0;
+        let currentY = 0;
+        let currentScale = 1.0;
+        let currentObjectUrl = '';
+        
+        const charInput = document.getElementById('char-input');
+        const bgInput = document.getElementById('bg-input');
+        const charWrapper = document.getElementById('char-wrapper');
+        const bgPreview = document.getElementById('bg-preview');
+        const exportBtn = document.getElementById('export-btn');
+        
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleValue = document.getElementById('scale-value');
+
+        // 背景画像の読み込み
+        bgInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                bgPreview.src = URL.createObjectURL(file);
+                bgPreview.style.display = 'block';
+                if (charFile) reloadAnimation();
+                checkReady();
+            }
+        });
+
+        // キャラクター画像の読み込み
+        charInput.addEventListener('change', (e) => {
+            charFile = e.target.files[0];
+            currentX = 0;
+            currentY = 0;
+            currentScale = 1.0;
+            scaleSlider.value = 100;
+            scaleValue.innerText = "100%";
+            if (charFile) {
+                charWrapper.style.display = 'flex';
+                updatePosition();
+                reloadAnimation();
+            }
+            checkReady();
+        });
+
+        // スライダー調整中
+        scaleSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            scaleValue.innerText = val + "%";
+            currentScale = val / 100;
+            const img = document.getElementById('char-preview');
+            if (img) img.style.transform = `scale(${currentScale})`;
+        });
+
+        scaleSlider.addEventListener('change', () => { reloadAnimation(); });
+
+        function updatePosition() {
+            charWrapper.style.marginLeft = `${currentX}px`;
+            charWrapper.style.marginTop = `${currentY}px`;
+        }
+
+        function reloadAnimation() {
+            if (!charFile) return;
+            const newUrl = URL.createObjectURL(charFile);
+            charWrapper.innerHTML = '';
+            
+            const newImg = document.createElement('img');
+            newImg.id = 'char-preview';
+            newImg.style.width = '100%';
+            newImg.style.height = '100%';
+            newImg.style.objectFit = 'contain';
+            newImg.style.pointerEvents = 'none';
+            newImg.style.transformOrigin = 'center center';
+            newImg.style.transform = `scale(${currentScale})`;
+            newImg.src = newUrl;
+            
+            charWrapper.appendChild(newImg);
+            if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+            currentObjectUrl = newUrl;
+        }
+
+        function checkReady() {
+            if (charFile && bgPreview.src) {
+                exportBtn.disabled = false;
+                exportBtn.innerText = "⚡ アニメスタンプを合成して保存";
+            } else {
+                exportBtn.disabled = true;
+                exportBtn.innerText = "⚡ 素材を両方読み込んでください";
+            }
+        }
+
+        // 合成＆自動ダウンロード
+        exportBtn.addEventListener('click', async () => {
+            exportBtn.disabled = true;
+            exportBtn.innerText = "🎨 スタンプを美しく合成中...";
+            
+            try {
+                const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+                const buffer = await charFile.arrayBuffer();
+                
+                const img = UPNG.decode(buffer);
+                const rgba8 = UPNG.toRGBA8(img);
+                
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                const outCanvas = document.createElement('canvas');
+                outCanvas.width = 320;
+                outCanvas.height = 270;
+                const ctx = outCanvas.getContext('2d');
+                
+                const outBufs = [];
+                const dels = [];
+                const gifFrames = [];
+                
+                const ratio = Math.min(320 / img.width, 270 / img.height);
+                const fitW = img.width * ratio;
+                const fitH = img.height * ratio;
+                const initX = (320 - fitW) / 2;
+                const initY = (270 - fitH) / 2;
+                
+                const finalW = fitW * currentScale;
+                const finalH = fitH * currentScale;
+                const centerX = initX + (fitW / 2) + currentX;
+                const centerY = initY + (fitH / 2) + currentY;
+                const finalX = centerX - (finalW / 2);
+                const finalY = centerY - (finalH / 2);
+
+                for (let i = 0; i < img.frames.length; i++) {
+                    const imgData = tempCtx.createImageData(img.width, img.height);
+                    imgData.data.set(new Uint8Array(rgba8[i]));
+                    tempCtx.putImageData(imgData, 0, 0);
+                    
+                    ctx.clearRect(0, 0, 320, 270);
+                    if (bgPreview.src) {
+                        ctx.drawImage(bgPreview, 0, 0, 320, 270);
+                    }
+                    ctx.drawImage(tempCanvas, finalX, finalY, finalW, finalH);
+                    
+                    if (selectedFormat === 'apng') {
+                        const outImgData = ctx.getImageData(0, 0, 320, 270);
+                        outBufs.push(outImgData.data.buffer);
+                        dels.push(img.frames[i].delay);
+                    } else {
+                        gifFrames.push(outCanvas.toDataURL());
+                    }
+                }
+                
+                const baseName = charFile.name.replace(/\.[^/.]+$/, "");
+                
+                if (selectedFormat === 'apng') {
+                    const apngBuf = UPNG.encode(outBufs, 320, 270, 0, dels);
+                    const blob = new Blob([apngBuf], {type: 'image/png'});
+                    triggerDownload(blob, `${baseName}_fixed.png`);
+                } else {
+                    await new Promise((resolve, reject) => {
+                        gifshot.createGIF({
+                            images: gifFrames,
+                            gifWidth: 320,
+                            gifHeight: 270,
+                            interval: img.frames[0].delay / 1000,
+                            numFrames: gifFrames.length
+                        }, function (obj) {
+                            if (!obj.error) {
+                                const link = document.createElement('a');
+                                link.href = obj.image;
+                                link.download = `${baseName}_fixed.gif`;
+                                link.click();
+                                resolve();
+                            } else {
+                                reject(obj.error);
+                            }
+                        });
+                    });
+                }
+                
+            } catch (err) {
+                alert("エラーが発生しました: " + err.message);
+            }
+            
+            checkReady();
+        });
+
+        function triggerDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // --- ドラッグ＆タッチ操作 ---
+        let isDragging = false;
+        let startX, startY;
+
+        function startDrag(e) {
+            isDragging = true;
+            const pageX = e.pageX || e.touches[0].pageX;
+            const pageY = e.pageY || e.touches[0].pageY;
+            startX = pageX - currentX;
+            startY = pageY - currentY;
+            if(e.touches) e.preventDefault();
+        }
+
+        function doDrag(e) {
+            if (!isDragging) return;
+            const pageX = e.pageX || e.touches[0].pageX;
+            const pageY = e.pageY || e.touches[0].pageY;
+            currentX = pageX - startX;
+            currentY = pageY - startY;
+            updatePosition();
+        }
+
+        function stopDrag() {
+            if (isDragging) {
+                isDragging = false;
+                reloadAnimation();
+            }
+        }
+
+        charWrapper.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', stopDrag);
+
+        charWrapper.addEventListener('touchstart', startDrag, {passive: false});
+        document.addEventListener('touchmove', doDrag, {passive: false});
+        document.addEventListener('touchend', stopDrag);
+    </script>
+</body>
+</html>
