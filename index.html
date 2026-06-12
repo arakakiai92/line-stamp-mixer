@@ -27,11 +27,11 @@
                 <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
                     🔗スタンプ/絵文字 ZIPメーカー
                 </a>
-                <a href="https://sales-graph-analyzer.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
-                    📊売上スクショ分析
-                </a>
                 <a href="https://arakakiai92.github.io/-arakakiai92-line-sales-analytics-lite/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
                     📊売上分析簡易版
+                </a>
+                <a href="https://sales-graph-analyzer.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    📊売上スクショ分析
                 </a>
             </div>
         </div>
@@ -47,7 +47,7 @@
                 </h2>
                 
                 <div class="space-y-1">
-                    <label class="block text-sm font-bold text-gray-700">👇 現在ドラッグ操作する対象:</label>
+                    <label class="block text-sm font-bold text-gray-700">👇 現在ドラッグ操作する対象を選択してください:</label>
                     <div class="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-xl border text-sm font-bold">
                         <button id="mode-char-btn" class="py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent">
                             🏃‍♂️ キャラクターを動かす
@@ -80,7 +80,7 @@
                 
                 <div class="space-y-3 border-t pt-3">
                     <div class="space-y-1">
-                        <label class="block text-sm font-bold text-gray-700">2. 背景画像（静止画PNG）:</label>
+                        <label class="block text-sm font-bold text-gray-700">2. 背景画像（APNG / 静止画PNG）:</label>
                         <input type="file" id="bg-input" accept="image/png" class="block w-full text-sm text-gray-500
                             file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
                             file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
@@ -123,17 +123,13 @@
                     <span id="drag-hint-text" class="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded">🏃‍♂️ キャラクターをドラッグ中</span>
                 </h2>
                 
-                <div class="preview-container border-2 border-dashed border-[#0071e3] rounded-lg overflow-hidden bg-white shadow-inner select-none">
-                    <div id="bg-wrapper" class="absolute top-0 left-0 w-full h-full flex justify-center align-items-center z-10 pointer-events-none" style="display:none; margin-left: 0px; margin-top: 0px; width:320px; height:270px;">
-                        <img id="bg-preview" src="" alt="背景" class="w-full h-full object-contain transform-origin-center" style="transform: scale(1);">
-                    </div>
-                    <div id="char-wrapper" class="absolute top-0 left-0 w-full h-full flex justify-center align-items-center z-20 cursor-move" style="display:none; margin-left: 0px; margin-top: 0px; width:320px; height:270px;">
-                    </div>
+                <div id="preview-box" class="preview-container border-2 border-dashed border-[#0071e3] rounded-lg overflow-hidden bg-white shadow-inner select-none cursor-move flex justify-center items-center">
+                    <canvas id="preview-canvas" width="320" height="270" style="width: 320px; height: 270px;"></canvas>
                 </div>
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
-                    ※選択された対象をドラッグ、またはスライダーを調整したあと、<br>
-                    指やマウスを離すと最新の状態でアニメーションが自動再生されます。
+                    ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
+                    キャラと背景、どちらもアニメーションが完全にシンクロ再生されます。
                 </p>
             </div>
             
@@ -154,18 +150,29 @@
         let currentX = 0;
         let currentY = 0;
         let currentScale = 1.0;
-        let currentObjectUrl = '';
         
-        // 背景画像変形データ (新設)
+        // 背景画像変形データ
         let currentBgX = 0;
         let currentBgY = 0;
         let currentBgScale = 1.0;
 
+        // キャラ用アニメーションメモリ
+        let charImgData = null;
+        let charFrames = [];
+        let frameDelays = [];
+        let totalDuration = 0;
+        
+        // 背景用アニメーションメモリ (新設)
+        let bgImgData = null;
+        let bgFrames = [];
+        let bgFrameDelays = [];
+        let bgTotalDuration = 0;
+
+        let animationStartTime = 0;
+        let isLooping = false;
+
         const charInput = document.getElementById('char-input');
         const bgInput = document.getElementById('bg-input');
-        const charWrapper = document.getElementById('char-wrapper');
-        const bgWrapper = document.getElementById('bg-wrapper');
-        const bgPreview = document.getElementById('bg-preview');
         const exportBtn = document.getElementById('export-btn');
         
         const scaleSlider = document.getElementById('scale-slider');
@@ -176,8 +183,11 @@
         const modeCharBtn = document.getElementById('mode-char-btn');
         const modeBgBtn = document.getElementById('mode-bg-btn');
         const dragHintText = document.getElementById('drag-hint-text');
+        const previewBox = document.getElementById('preview-box');
+        const pCanvas = document.getElementById('preview-canvas');
+        const pCtx = pCanvas.getContext('2d');
 
-        // 操作対象の切り替えシステム
+        // 操作対象の切り替え
         modeCharBtn.addEventListener('click', () => switchMode('char'));
         modeBgBtn.addEventListener('click', () => switchMode('bg'));
 
@@ -188,134 +198,226 @@
                 modeBgBtn.className = "py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent";
                 dragHintText.innerText = "🏃‍♂️ キャラクターをドラッグ中";
                 dragHintText.className = "text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded";
-                charWrapper.style.cursor = "move";
             } else {
                 modeBgBtn.className = "py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent";
                 modeCharBtn.className = "py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent";
                 dragHintText.innerText = "🖼️ 背景画像をドラッグ中";
                 dragHintText.className = "text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded";
-                charWrapper.style.cursor = "move";
             }
         }
 
-        // 背景画像の読み込み
-        bgInput.addEventListener('change', (e) => {
+        // 背景画像の読み込み (APNG一括メモリ展開システムに超絶進化！)
+        bgInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (file) {
-                bgPreview.src = URL.createObjectURL(file);
-                bgWrapper.style.display = 'flex';
-                currentBgX = 0;
-                currentBgY = 0;
-                currentBgScale = 1.0;
-                bgScaleSlider.value = 100;
-                bgScaleValue.innerText = "100%";
-                updateBgTransform();
-                if (charFile) reloadAnimation();
-                checkReady();
+            if (!file) return;
+
+            currentBgX = 0;
+            currentBgY = 0;
+            currentBgScale = 1.0;
+            bgScaleSlider.value = 100;
+            bgScaleValue.innerText = "100%";
+
+            exportBtn.disabled = true;
+            exportBtn.innerText = "⏳ 背景画像を解析中...";
+
+            try {
+                const buffer = await file.arrayBuffer();
+                bgImgData = UPNG.decode(buffer);
+                const bgRgba8 = UPNG.toRGBA8(bgImgData);
+
+                bgFrames = [];
+                bgFrameDelays = [];
+                bgTotalDuration = 0;
+
+                // 静止画かAPNGかを自動判定して展開
+                for (let i = 0; i < bgImgData.frames.length; i++) {
+                    const bCanvas = document.createElement('canvas');
+                    bCanvas.width = bgImgData.width;
+                    bCanvas.height = bgImgData.height;
+                    const bCtx = bCanvas.getContext('2d');
+
+                    const bImgData = bCtx.createImageData(bgImgData.width, bgImgData.height);
+                    bImgData.data.set(new Uint8Array(bgRgba8[i]));
+                    bCtx.putImageData(bImgData, 0, 0);
+
+                    bgFrames.push(bCanvas);
+                    const delay = bgImgData.frames[i].delay;
+                    bgFrameDelays.push(delay);
+                    bgTotalDuration += delay;
+                }
+
+                if (!isLooping) {
+                    animationStartTime = performance.now();
+                    isLooping = true;
+                    startPreviewLoop();
+                }
+            } catch (err) {
+                alert("背景画像の解析に失敗しました: " + err.message);
             }
+            checkReady();
         });
 
         // キャラクター画像の読み込み
-        charInput.addEventListener('change', (e) => {
+        charInput.addEventListener('change', async (e) => {
             charFile = e.target.files[0];
+            if (!charFile) return;
+            
             currentX = 0;
             currentY = 0;
             currentScale = 1.0;
             scaleSlider.value = 100;
             scaleValue.innerText = "100%";
-            if (charFile) {
-                charWrapper.style.display = 'flex';
-                updateCharPosition();
-                reloadAnimation();
+            
+            exportBtn.disabled = true;
+            exportBtn.innerText = "⏳ キャラクターを解析中...";
+            
+            try {
+                const buffer = await charFile.arrayBuffer();
+                charImgData = UPNG.decode(buffer);
+                const rgba8 = UPNG.toRGBA8(charImgData);
+                
+                charFrames = [];
+                frameDelays = [];
+                totalDuration = 0;
+                
+                for (let i = 0; i < charImgData.frames.length; i++) {
+                    const fCanvas = document.createElement('canvas');
+                    fCanvas.width = charImgData.width;
+                    fCanvas.height = charImgData.height;
+                    const fCtx = fCanvas.getContext('2d');
+                    
+                    const fImgData = fCtx.createImageData(charImgData.width, charImgData.height);
+                    fImgData.data.set(new Uint8Array(rgba8[i]));
+                    fCtx.putImageData(fImgData, 0, 0);
+                    
+                    charFrames.push(fCanvas);
+                    const delay = charImgData.frames[i].delay;
+                    frameDelays.push(delay);
+                    totalDuration += delay;
+                }
+                
+                if (!isLooping) {
+                    animationStartTime = performance.now();
+                    isLooping = true;
+                    startPreviewLoop();
+                }
+            } catch (err) {
+                alert("キャラクターAPNGの解析に失敗しました: " + err.message);
             }
             checkReady();
         });
 
-        // キャラスライダー調整中
+        // キャラスライダー調整
         scaleSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             scaleValue.innerText = val + "%";
             currentScale = val / 100;
-            const img = document.getElementById('char-preview');
-            if (img) img.style.transform = `scale(${currentScale})`;
         });
-        scaleSlider.addEventListener('change', () => { reloadAnimation(); });
 
-        // 背景スライダー調整中 (新設)
+        // 背景スライダー調整
         bgScaleSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             bgScaleValue.innerText = val + "%";
             currentBgScale = val / 100;
-            bgPreview.style.transform = `scale(${currentBgScale})`;
         });
-        bgScaleSlider.addEventListener('change', () => { reloadAnimation(); });
 
-        function updateCharPosition() {
-            charWrapper.style.marginLeft = `${currentX}px`;
-            charWrapper.style.marginTop = `${currentY}px`;
-        }
-
-        function updateBgTransform() {
-            bgWrapper.style.marginLeft = `${currentBgX}px`;
-            bgWrapper.style.marginTop = `${currentBgY}px`;
-            bgPreview.style.transform = `scale(${currentBgScale})`;
-        }
-
-        function reloadAnimation() {
-            if (!charFile) return;
-            const newUrl = URL.createObjectURL(charFile);
-            charWrapper.innerHTML = '';
+        // 🌟【Wアニメーション完全同期システム】
+        function startPreviewLoop() {
+            if (!isLooping) return;
             
-            const newImg = document.createElement('img');
-            newImg.id = 'char-preview';
-            newImg.style.width = '100%';
-            newImg.style.height = '100%';
-            newImg.style.objectFit = 'contain';
-            newImg.style.pointerEvents = 'none';
-            newImg.style.transformOrigin = 'center center';
-            newImg.style.transform = `scale(${currentScale})`;
-            newImg.src = newUrl;
+            pCtx.clearRect(0, 0, 320, 270);
+            const nowTime = performance.now();
             
-            charWrapper.appendChild(newImg);
-            if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-            currentObjectUrl = newUrl;
+            // 1. 背景のリアルタイムアニメーション描画
+            if (bgFrames.length > 0 && bgImgData) {
+                let currentBgFrameIdx = 0;
+                if (bgFrames.length > 1 && bgTotalDuration > 0) {
+                    const elapsedBg = (nowTime - animationStartTime) % bgTotalDuration;
+                    let sumDelayBg = 0;
+                    for (let i = 0; i < bgFrameDelays.length; i++) {
+                        sumDelayBg += bgFrameDelays[i];
+                        if (elapsedBg < sumDelayBg) {
+                            currentBgFrameIdx = i;
+                            break;
+                        }
+                    }
+                }
+                
+                const frameBgCanvas = bgFrames[currentBgFrameIdx];
+                const bgRatio = Math.min(320 / bgImgData.width, 270 / bgImgData.height);
+                const bgFitW = bgImgData.width * bgRatio;
+                const bgFitH = bgImgData.height * bgRatio;
+                const bgInitX = (320 - bgFitW) / 2;
+                const bgInitY = (270 - bgFitH) / 2;
+                
+                const bgFinalW = bgFitW * currentBgScale;
+                const bgFinalH = bgFitH * currentBgScale;
+                const bgCenterX = bgInitX + (bgFitW / 2) + currentBgX;
+                const bgCenterY = bgInitY + (bgFitH / 2) + currentBgY;
+                const bgFinalX = bgCenterX - (bgFinalW / 2);
+                const bgFinalY = bgCenterY - (bgFinalH / 2);
+                
+                pCtx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+            }
+            
+            // 2. キャラクターのリアルタイムアニメーション描画
+            if (charFrames.length > 0 && charImgData) {
+                const elapsed = (nowTime - animationStartTime) % totalDuration;
+                let currentFrameIdx = 0;
+                let sumDelay = 0;
+                
+                for (let i = 0; i < frameDelays.length; i++) {
+                    sumDelay += frameDelays[i];
+                    if (elapsed < sumDelay) {
+                        currentFrameIdx = i;
+                        break;
+                    }
+                }
+                
+                const frameCanvas = charFrames[currentFrameIdx];
+                
+                const charRatio = Math.min(320 / charImgData.width, 270 / charImgData.height);
+                const charFitW = charImgData.width * charRatio;
+                const charFitH = charImgData.height * charRatio;
+                const charInitX = (320 - charFitW) / 2;
+                const charInitY = (270 - charFitH) / 2;
+                
+                const charFinalW = charFitW * currentScale;
+                const charFinalH = charFitH * currentScale;
+                const charCenterX = charInitX + (charFitW / 2) + currentX;
+                const charCenterY = charInitY + (charFitH / 2) + currentY;
+                const finalX = charCenterX - (charFinalW / 2);
+                const finalY = charCenterY - (charFinalH / 2);
+                
+                pCtx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
+            }
+            
+            requestAnimationFrame(startPreviewLoop);
         }
 
         function checkReady() {
-            if (charFile && bgPreview.src) {
+            if (charFile && charFrames.length > 0 && bgFrames.length > 0) {
                 exportBtn.disabled = false;
                 exportBtn.innerText = "⚡ アニメスタンプを合成して保存";
             } else {
                 exportBtn.disabled = true;
-                exportBtn.innerText = "⚡ 素材を両方読み込んでください";
+                if (!charFile) {
+                    exportBtn.innerText = "⚡ キャラクターを読み込んでください";
+                } else if (bgFrames.length === 0) {
+                    exportBtn.innerText = "⚡ 背景画像を読み込んでください";
+                } else {
+                    exportBtn.innerText = "⚡ 素材を両方読み込んでください";
+                }
             }
         }
 
-        // 高精度ダブル変形合成＆自動ダウンロード処理
+        // Wアニメーション高精度ガッチャンコ合成 ＆ ダウンロード
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
             exportBtn.innerText = "🎨 スタンプを美しく合成中...";
             
             try {
                 const selectedFormat = document.querySelector('input[name="format"]:checked').value;
-                
-                // 1. キャラクターのデコード
-                const charBuffer = await charFile.arrayBuffer();
-                const charImg = UPNG.decode(charBuffer);
-                const charRgba8 = UPNG.toRGBA8(charImg);
-                
-                // 2. 背景（静止画）のサイズ情報を取得して仮想展開
-                const bgResponse = await fetch(bgPreview.src);
-                const bgBlob = await bgResponse.blob();
-                const bgBuffer = await bgBlob.arrayBuffer();
-                const bgImg = UPNG.decode(bgBuffer);
-                const bgRgba8 = UPNG.toRGBA8(bgImg);
-                
-                // キャンバス各種の用意
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = Math.max(charImg.width, bgImg.width);
-                tempCanvas.height = Math.max(charImg.height, bgImg.height);
-                const tempCtx = tempCanvas.getContext('2d');
                 
                 const outCanvas = document.createElement('canvas');
                 outCanvas.width = 320;
@@ -326,10 +428,10 @@
                 const dels = [];
                 const gifFrames = [];
                 
-                // 📐 数学的計算：背景画像の「object-fit: contain」再現配置
-                const bgRatio = Math.min(320 / bgImg.width, 270 / bgImg.height);
-                const bgFitW = bgImg.width * bgRatio;
-                const bgFitH = bgImg.height * bgRatio;
+                // 背景配置位置計算
+                const bgRatio = Math.min(320 / bgImgData.width, 270 / bgImgData.height);
+                const bgFitW = bgImgData.width * bgRatio;
+                const bgFitH = bgImgData.height * bgRatio;
                 const bgInitX = (320 - bgFitW) / 2;
                 const bgInitY = (270 - bgFitH) / 2;
                 
@@ -340,10 +442,10 @@
                 const bgFinalX = bgCenterX - (bgFinalW / 2);
                 const bgFinalY = bgCenterY - (bgFinalH / 2);
 
-                // 📐 数学的計算：キャラクターの「object-fit: contain」再現配置
-                const charRatio = Math.min(320 / charImg.width, 270 / charImg.height);
-                const charFitW = charImg.width * charRatio;
-                const charFitH = charImg.height * charRatio;
+                // キャラ配置位置計算
+                const charRatio = Math.min(320 / charImgData.width, 270 / charImgData.height);
+                const charFitW = charImgData.width * charRatio;
+                const charFitH = charImgData.height * charRatio;
                 const charInitX = (320 - charFitW) / 2;
                 const charInitY = (270 - charFitH) / 2;
                 
@@ -351,32 +453,46 @@
                 const charFinalH = charFitH * currentScale;
                 const charCenterX = charInitX + (charFitW / 2) + currentX;
                 const charCenterY = charInitY + (charFitH / 2) + currentY;
-                const charFinalX = charCenterX - (charFinalW / 2);
-                const charFinalY = charCenterY - (charFinalH / 2);
+                const finalX = charCenterX - (charFinalW / 2);
+                const finalY = charCenterY - (charFinalH / 2);
 
-                // コマ（フレーム）ごとに完全結合
-                for (let i = 0; i < charImg.frames.length; i++) {
+                let charElapsed = 0;
+
+                // キャラクターの全フレーム数を基準にループを回す
+                for (let i = 0; i < charImgData.frames.length; i++) {
                     ctx.clearRect(0, 0, 320, 270);
                     
-                    // 【工程1】変形を加味して背景を描画
-                    const bgData = tempCtx.createImageData(bgImg.width, bgImg.height);
-                    bgData.data.set(new Uint8Array(bgRgba8[0])); // 静止画なので1コマ目
-                    tempCtx.putImageData(bgData, 0, 0);
-                    ctx.drawImage(tempCanvas, 0, 0, bgImg.width, bgImg.height, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+                    // 1. 各コマの時点でのタイムスタンプに合った背景アニメフレームを計算
+                    let exportBgFrameIdx = 0;
+                    if (bgFrames.length > 1 && bgTotalDuration > 0) {
+                        const elapsedBg = charElapsed % bgTotalDuration;
+                        let sumDelayBg = 0;
+                        for (let j = 0; j < bgFrameDelays.length; j++) {
+                            sumDelayBg += bgFrameDelays[j];
+                            if (elapsedBg < sumDelayBg) {
+                                exportBgFrameIdx = j;
+                                break;
+                            }
+                        }
+                    }
                     
-                    // 【工程2】変形を加味してキャラを上書き描画
-                    const charData = tempCtx.createImageData(charImg.width, charImg.height);
-                    charData.data.set(new Uint8Array(charRgba8[i]));
-                    tempCtx.putImageData(charData, 0, 0);
-                    ctx.drawImage(tempCanvas, 0, 0, charImg.width, charImg.height, charFinalX, charFinalY, charFinalW, charFinalH);
+                    const frameBgCanvas = bgFrames[exportBgFrameIdx];
+                    ctx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+                    
+                    // 2. キャラのフレームを描画
+                    const frameCanvas = charFrames[i];
+                    ctx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
                     
                     if (selectedFormat === 'apng') {
                         const outImgData = ctx.getImageData(0, 0, 320, 270);
                         outBufs.push(outImgData.data.buffer);
-                        dels.push(charImg.frames[i].delay);
+                        dels.push(charImgData.frames[i].delay);
                     } else {
                         gifFrames.push(outCanvas.toDataURL());
                     }
+
+                    // 経過時間を蓄積
+                    charElapsed += charImgData.frames[i].delay;
                 }
                 
                 const baseName = charFile.name.replace(/\.[^/.]+$/, "");
@@ -391,7 +507,7 @@
                             images: gifFrames,
                             gifWidth: 320,
                             gifHeight: 270,
-                            interval: charImg.frames[0].delay / 1000,
+                            interval: charImgData.frames[0].delay / 1000,
                             numFrames: gifFrames.length
                         }, function (obj) {
                             if (!obj.error) {
@@ -423,14 +539,14 @@
             URL.revokeObjectURL(url);
         }
 
-        // --- ドラッグ＆タッチ操作（モード切り替え対応版） ---
+        // --- ドラッグ＆タッチ操作 ---
         let isDragging = false;
         let startX, startY;
 
         function startDrag(e) {
             isDragging = true;
-            const pageX = e.pageX || e.touches[0].pageX;
-            const pageY = e.pageY || e.touches[0].pageY;
+            const pageX = e.pageX || (e.touches && e.touches[0].pageX);
+            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
             
             if (activeMode === 'char') {
                 startX = pageX - currentX;
@@ -439,37 +555,32 @@
                 startX = pageX - currentBgX;
                 startY = pageY - currentBgY;
             }
-            if(e.touches) e.preventDefault();
+            if(e.touches && e.target === pCanvas) e.preventDefault();
         }
 
         function doDrag(e) {
             if (!isDragging) return;
-            const pageX = e.pageX || e.touches[0].pageX;
-            const pageY = e.pageY || e.touches[0].pageY;
+            const pageX = e.pageX || (e.touches && e.touches[0].pageX);
+            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
             
             if (activeMode === 'char') {
                 currentX = pageX - startX;
                 currentY = pageY - startY;
-                updateCharPosition();
             } else {
                 currentBgX = pageX - startX;
                 currentBgY = pageY - startY;
-                updateBgTransform();
             }
         }
 
         function stopDrag() {
-            if (isDragging) {
-                isDragging = false;
-                reloadAnimation(); // 指を離したらその場でループ再生開始
-            }
+            isDragging = false;
         }
 
-        charWrapper.addEventListener('mousedown', startDrag);
+        previewBox.addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', doDrag);
         document.addEventListener('mouseup', stopDrag);
 
-        charWrapper.addEventListener('touchstart', startDrag, {passive: false});
+        previewBox.addEventListener('touchstart', startDrag, {passive: false});
         document.addEventListener('touchmove', doDrag, {passive: false});
         document.addEventListener('touchend', stopDrag);
     </script>
