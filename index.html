@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Sales Analytics Mixer</title>
+    <title>LINE Sales Analytics Pro - Mixer</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/upng-js/2.1.0/UPNG.min.js"></script>
@@ -21,7 +21,7 @@
         <div class="max-w-6xl mx-auto flex items-center justify-between px-4">
             <div class="flex items-center">
                 <img src="top-left.png" alt="シーサーアイコン" class="h-16 w-auto block object-contain">
-                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro</h1>
+                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">Anime stamp-mixer</h1>
             </div>
             <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
                 <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
@@ -110,9 +110,12 @@
                     </label>
                 </div>
 
-                <div class="pt-2">
+                <div class="pt-2 space-y-2">
                     <button id="export-btn" disabled class="w-full py-3.5 px-4 font-black text-white bg-[#00C300] hover:bg-[#009900] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all duration-200 text-center text-base active:scale-[0.98]">
                         ⚡ アニメスタンプを合成して保存
+                    </button>
+                    <button id="reset-btn" class="w-full py-2.5 px-4 font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 hover:text-gray-700 rounded-xl border border-gray-300 transition-all duration-200 text-center text-sm active:scale-[0.98]">
+                        🔄 読み込んだ素材と位置をリセット
                     </button>
                 </div>
             </div>
@@ -129,7 +132,7 @@
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
                     ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
-                    キャラと背景、どちらもアニメーションが完全にシンクロ再生されます。
+                    背景画像が「静止画」でも「動くAPNG」でも、自動判別して完全に常時再生されます。
                 </p>
             </div>
             
@@ -162,7 +165,7 @@
         let frameDelays = [];
         let totalDuration = 0;
         
-        // 背景用アニメーションメモリ (新設)
+        // 背景用アニメーションメモリ
         let bgImgData = null;
         let bgFrames = [];
         let bgFrameDelays = [];
@@ -174,6 +177,7 @@
         const charInput = document.getElementById('char-input');
         const bgInput = document.getElementById('bg-input');
         const exportBtn = document.getElementById('export-btn');
+        const resetBtn = document.getElementById('reset-btn');
         
         const scaleSlider = document.getElementById('scale-slider');
         const scaleValue = document.getElementById('scale-value');
@@ -206,7 +210,7 @@
             }
         }
 
-        // 背景画像の読み込み (APNG一括メモリ展開システムに超絶進化！)
+        // 背景画像の読み込み (★静止画PNG / アニメAPNG を自動判別して完全両対応に修正)
         bgInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -229,8 +233,10 @@
                 bgFrameDelays = [];
                 bgTotalDuration = 0;
 
-                // 静止画かAPNGかを自動判定して展開
-                for (let i = 0; i < bgImgData.frames.length; i++) {
+                // 💡【重要】静止画PNGの場合は frames 配列が存在しないため、自動で1コマの静止画として安全に処理
+                const frameCount = (bgImgData.frames && bgImgData.frames.length > 0) ? bgImgData.frames.length : 1;
+
+                for (let i = 0; i < frameCount; i++) {
                     const bCanvas = document.createElement('canvas');
                     bCanvas.width = bgImgData.width;
                     bCanvas.height = bgImgData.height;
@@ -241,9 +247,15 @@
                     bCtx.putImageData(bImgData, 0, 0);
 
                     bgFrames.push(bCanvas);
-                    const delay = bgImgData.frames[i].delay;
+                    
+                    // 静止画ならダミーの100ms、APNGならそのコマの速度を適用
+                    const delay = (bgImgData.frames && bgImgData.frames[i]) ? bgImgData.frames[i].delay : 100;
                     bgFrameDelays.push(delay);
-                    bgTotalDuration += delay;
+                    
+                    // コマ数が2つ以上（APNG）のときだけ総ループ時間に加算
+                    if (bgImgData.frames && bgImgData.frames.length > 1) {
+                        bgTotalDuration += delay;
+                    }
                 }
 
                 if (!isLooping) {
@@ -280,7 +292,9 @@
                 frameDelays = [];
                 totalDuration = 0;
                 
-                for (let i = 0; i < charImgData.frames.length; i++) {
+                const frameCount = (charImgData.frames && charImgData.frames.length > 0) ? charImgData.frames.length : 1;
+                
+                for (let i = 0; i < frameCount; i++) {
                     const fCanvas = document.createElement('canvas');
                     fCanvas.width = charImgData.width;
                     fCanvas.height = charImgData.height;
@@ -291,9 +305,11 @@
                     fCtx.putImageData(fImgData, 0, 0);
                     
                     charFrames.push(fCanvas);
-                    const delay = charImgData.frames[i].delay;
+                    const delay = (charImgData.frames && charImgData.frames[i]) ? charImgData.frames[i].delay : 100;
                     frameDelays.push(delay);
-                    totalDuration += delay;
+                    if (charImgData.frames && charImgData.frames.length > 1) {
+                        totalDuration += delay;
+                    }
                 }
                 
                 if (!isLooping) {
@@ -321,14 +337,14 @@
             currentBgScale = val / 100;
         });
 
-        // 🌟【Wアニメーション完全同期システム】
+        // 🌟 Wアニメーション・静止画完全対応ループ
         function startPreviewLoop() {
             if (!isLooping) return;
             
             pCtx.clearRect(0, 0, 320, 270);
             const nowTime = performance.now();
             
-            // 1. 背景のリアルタイムアニメーション描画
+            // 1. 背景のリアルタイム描画
             if (bgFrames.length > 0 && bgImgData) {
                 let currentBgFrameIdx = 0;
                 if (bgFrames.length > 1 && bgTotalDuration > 0) {
@@ -360,17 +376,18 @@
                 pCtx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
             }
             
-            // 2. キャラクターのリアルタイムアニメーション描画
+            // 2. キャラクターのリアルタイム描画
             if (charFrames.length > 0 && charImgData) {
-                const elapsed = (nowTime - animationStartTime) % totalDuration;
                 let currentFrameIdx = 0;
-                let sumDelay = 0;
-                
-                for (let i = 0; i < frameDelays.length; i++) {
-                    sumDelay += frameDelays[i];
-                    if (elapsed < sumDelay) {
-                        currentFrameIdx = i;
-                        break;
+                if (charFrames.length > 1 && totalDuration > 0) {
+                    const elapsed = (nowTime - animationStartTime) % totalDuration;
+                    let sumDelay = 0;
+                    for (let i = 0; i < frameDelays.length; i++) {
+                        sumDelay += frameDelays[i];
+                        if (elapsed < sumDelay) {
+                            currentFrameIdx = i;
+                            break;
+                        }
                     }
                 }
                 
@@ -411,7 +428,42 @@
             }
         }
 
-        // Wアニメーション高精度ガッチャンコ合成 ＆ ダウンロード
+        // 🔄 リセットボタンの全データ初期化ロジック
+        resetBtn.addEventListener('click', () => {
+            charInput.value = '';
+            bgInput.value = '';
+            charFile = null;
+
+            currentX = 0;
+            currentY = 0;
+            currentScale = 1.0;
+            currentBgX = 0;
+            currentBgY = 0;
+            currentBgScale = 1.0;
+
+            charImgData = null;
+            charFrames = [];
+            frameDelays = [];
+            totalDuration = 0;
+
+            bgImgData = null;
+            bgFrames = [];
+            bgFrameDelays = [];
+            bgTotalDuration = 0;
+
+            isLooping = false;
+
+            scaleSlider.value = 100;
+            scaleValue.innerText = "100%";
+            bgScaleSlider.value = 100;
+            bgScaleValue.innerText = "100%";
+
+            switchMode('char');
+            pCtx.clearRect(0, 0, 320, 270);
+            checkReady();
+        });
+
+        // 高精度合成 ＆ ダウンロード
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
             exportBtn.innerText = "🎨 スタンプを美しく合成中...";
@@ -457,12 +509,11 @@
                 const finalY = charCenterY - (charFinalH / 2);
 
                 let charElapsed = 0;
+                const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
 
-                // キャラクターの全フレーム数を基準にループを回す
-                for (let i = 0; i < charImgData.frames.length; i++) {
+                for (let i = 0; i < loopLimit; i++) {
                     ctx.clearRect(0, 0, 320, 270);
                     
-                    // 1. 各コマの時点でのタイムスタンプに合った背景アニメフレームを計算
                     let exportBgFrameIdx = 0;
                     if (bgFrames.length > 1 && bgTotalDuration > 0) {
                         const elapsedBg = charElapsed % bgTotalDuration;
@@ -479,23 +530,23 @@
                     const frameBgCanvas = bgFrames[exportBgFrameIdx];
                     ctx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
                     
-                    // 2. キャラのフレームを描画
-                    const frameCanvas = charFrames[i];
-                    ctx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
+                    if (charFrames.length > 0) {
+                        const frameCanvas = charFrames[i];
+                        ctx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
+                    }
                     
                     if (selectedFormat === 'apng') {
                         const outImgData = ctx.getImageData(0, 0, 320, 270);
                         outBufs.push(outImgData.data.buffer);
-                        dels.push(charImgData.frames[i].delay);
+                        dels.push(charImgData.frames ? charImgData.frames[i].delay : 100);
                     } else {
                         gifFrames.push(outCanvas.toDataURL());
                     }
 
-                    // 経過時間を蓄積
-                    charElapsed += charImgData.frames[i].delay;
+                    charElapsed += (charImgData.frames ? charImgData.frames[i].delay : 100);
                 }
                 
-                const baseName = charFile.name.replace(/\.[^/.]+$/, "");
+                const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
                 
                 if (selectedFormat === 'apng') {
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 0, dels);
@@ -507,7 +558,7 @@
                             images: gifFrames,
                             gifWidth: 320,
                             gifHeight: 270,
-                            interval: charImgData.frames[0].delay / 1000,
+                            interval: (charImgData.frames ? charImgData.frames[0].delay : 100) / 1000,
                             numFrames: gifFrames.length
                         }, function (obj) {
                             if (!obj.error) {
@@ -572,17 +623,13 @@
             }
         }
 
-        function stopDrag() {
-            isDragging = false;
-        }
-
-        previewBox.addEventListener('mousedown', startDrag);
+        document.getElementById('preview-box').addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', doDrag);
-        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('mouseup', () => { isDragging = false; });
 
-        previewBox.addEventListener('touchstart', startDrag, {passive: false});
+        document.getElementById('preview-box').addEventListener('touchstart', startDrag, {passive: false});
         document.addEventListener('touchmove', doDrag, {passive: false});
-        document.addEventListener('touchend', stopDrag);
+        document.addEventListener('touchend', () => { isDragging = false; });
     </script>
 </body>
 </html>
