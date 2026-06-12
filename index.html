@@ -27,13 +27,12 @@
                 <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
                     🔗スタンプ/絵文字 ZIPメーカー
                 </a>
-                <a href="https://arakakiai92.github.io/-arakakiai92-line-sales-analytics-lite/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
-                    📊売上分析簡易版
-                </a>
                 <a href="https://sales-graph-analyzer.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
                     📊売上スクショ分析
                 </a>
-                
+                <a href="https://arakakiai92.github.io/-arakakiai92-line-sales-analytics-lite/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    📊売上分析簡易版
+                </a>
             </div>
         </div>
     </header>
@@ -48,29 +47,55 @@
                 </h2>
                 
                 <div class="space-y-1">
-                    <label class="block text-sm font-bold text-gray-700">1. キャラクターAPNG（動くPNG）:</label>
-                    <input type="file" id="char-input" accept="image/png" class="block w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
-                        file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
-                        hover:file:bg-green-100 cursor-pointer transition" />
+                    <label class="block text-sm font-bold text-gray-700">👇 現在ドラッグ操作する対象:</label>
+                    <div class="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-xl border text-sm font-bold">
+                        <button id="mode-char-btn" class="py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent">
+                            🏃‍♂️ キャラクターを動かす
+                        </button>
+                        <button id="mode-bg-btn" class="py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent">
+                            🖼️ 背景画像を動かす
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="p-4 bg-[#fff9e6] border border-[#ffe0b2] rounded-xl space-y-2">
-                    <label class="block text-sm font-bold text-[#b78103] flex items-center gap-1">
-                        🔎 キャラクターの大きさ調節
-                    </label>
-                    <div class="flex items-center gap-4">
-                        <input type="range" id="scale-slider" min="50" max="200" value="100" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f59e0b]">
-                        <span id="scale-value" class="text-sm font-black text-[#b78103] min-w-[45px] text-right">100%</span>
+
+                <div class="space-y-3 border-t pt-3">
+                    <div class="space-y-1">
+                        <label class="block text-sm font-bold text-gray-700">1. キャラクターAPNG（動くPNG）:</label>
+                        <input type="file" id="char-input" accept="image/png" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                            file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
+                            hover:file:bg-green-100 cursor-pointer transition" />
+                    </div>
+                    
+                    <div id="char-scale-card" class="p-4 bg-[#fff9e6] border border-[#ffe0b2] rounded-xl space-y-2">
+                        <label class="block text-sm font-bold text-[#b78103] flex items-center gap-1">
+                            🔎 キャラクターの大きさ調節
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="scale-slider" min="50" max="200" value="100" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f59e0b]">
+                            <span id="scale-value" class="text-sm font-black text-[#b78103] min-w-[45px] text-right">100%</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="space-y-1 border-t pt-3">
-                    <label class="block text-sm font-bold text-gray-700">2. 背景画像（静止画PNG）:</label>
-                    <input type="file" id="bg-input" accept="image/png" class="block w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
-                        file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
-                        hover:file:bg-green-100 cursor-pointer transition" />
+                <div class="space-y-3 border-t pt-3">
+                    <div class="space-y-1">
+                        <label class="block text-sm font-bold text-gray-700">2. 背景画像（静止画PNG）:</label>
+                        <input type="file" id="bg-input" accept="image/png" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                            file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
+                            hover:file:bg-green-100 cursor-pointer transition" />
+                    </div>
+                    
+                    <div id="bg-scale-card" class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                        <label class="block text-sm font-bold text-emerald-700 flex items-center gap-1">
+                            🔎 背景画像の大きさ調節
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="bg-scale-slider" min="50" max="200" value="100" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                            <span id="bg-scale-value" class="text-sm font-black text-emerald-700 min-w-[45px] text-right">100%</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
@@ -95,18 +120,20 @@
             <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center justify-center">
                 <h2 class="text-sm md:text-base font-bold text-gray-700 border-b pb-2 mb-4 w-full text-left flex justify-between items-center">
                     <span>🎬 仕上がりリアルタイムプレビュー</span>
-                    <span class="text-xs text-gray-400 font-normal">枠内をドラッグで位置調整</span>
+                    <span id="drag-hint-text" class="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded">🏃‍♂️ キャラクターをドラッグ中</span>
                 </h2>
                 
-                <div class="preview-container border-2 border-dashed border-[#0071e3] rounded-lg overflow-hidden bg-white shadow-inner">
-                    <img id="bg-preview" src="" alt="背景" class="w-full height-full object-contain absolute top-0 left-0 z-10 pointer-events-none" style="display:none; width:320px; height:270px;">
-                    <div id="char-wrapper" class="absolute z-20 top-0 left-0 w-full h-full cursor-move flex justify-center align-items-center" style="display:none; margin-left: 0px; margin-top: 0px; width:320px; height:270px;">
+                <div class="preview-container border-2 border-dashed border-[#0071e3] rounded-lg overflow-hidden bg-white shadow-inner select-none">
+                    <div id="bg-wrapper" class="absolute top-0 left-0 w-full h-full flex justify-center align-items-center z-10 pointer-events-none" style="display:none; margin-left: 0px; margin-top: 0px; width:320px; height:270px;">
+                        <img id="bg-preview" src="" alt="背景" class="w-full h-full object-contain transform-origin-center" style="transform: scale(1);">
+                    </div>
+                    <div id="char-wrapper" class="absolute top-0 left-0 w-full h-full flex justify-center align-items-center z-20 cursor-move" style="display:none; margin-left: 0px; margin-top: 0px; width:320px; height:270px;">
                     </div>
                 </div>
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
-                    ※キャラクターをドラッグ、または上のスライダーを調整したあと、<br>
-                    指やマウスを離すと最新の状態でアニメーションが自動再開します。
+                    ※選択された対象をドラッグ、またはスライダーを調整したあと、<br>
+                    指やマウスを離すと最新の状態でアニメーションが自動再生されます。
                 </p>
             </div>
             
@@ -121,26 +148,68 @@
 
     <script>
         let charFile = null;
+        let activeMode = 'char'; // 'char' または 'bg'
+        
+        // キャラクター変形データ
         let currentX = 0;
         let currentY = 0;
         let currentScale = 1.0;
         let currentObjectUrl = '';
         
+        // 背景画像変形データ (新設)
+        let currentBgX = 0;
+        let currentBgY = 0;
+        let currentBgScale = 1.0;
+
         const charInput = document.getElementById('char-input');
         const bgInput = document.getElementById('bg-input');
         const charWrapper = document.getElementById('char-wrapper');
+        const bgWrapper = document.getElementById('bg-wrapper');
         const bgPreview = document.getElementById('bg-preview');
         const exportBtn = document.getElementById('export-btn');
         
         const scaleSlider = document.getElementById('scale-slider');
         const scaleValue = document.getElementById('scale-value');
+        const bgScaleSlider = document.getElementById('bg-scale-slider');
+        const bgScaleValue = document.getElementById('bg-scale-value');
+
+        const modeCharBtn = document.getElementById('mode-char-btn');
+        const modeBgBtn = document.getElementById('mode-bg-btn');
+        const dragHintText = document.getElementById('drag-hint-text');
+
+        // 操作対象の切り替えシステム
+        modeCharBtn.addEventListener('click', () => switchMode('char'));
+        modeBgBtn.addEventListener('click', () => switchMode('bg'));
+
+        function switchMode(mode) {
+            activeMode = mode;
+            if (mode === 'char') {
+                modeCharBtn.className = "py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent";
+                modeBgBtn.className = "py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent";
+                dragHintText.innerText = "🏃‍♂️ キャラクターをドラッグ中";
+                dragHintText.className = "text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded";
+                charWrapper.style.cursor = "move";
+            } else {
+                modeBgBtn.className = "py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent";
+                modeCharBtn.className = "py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent";
+                dragHintText.innerText = "🖼️ 背景画像をドラッグ中";
+                dragHintText.className = "text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded";
+                charWrapper.style.cursor = "move";
+            }
+        }
 
         // 背景画像の読み込み
         bgInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 bgPreview.src = URL.createObjectURL(file);
-                bgPreview.style.display = 'block';
+                bgWrapper.style.display = 'flex';
+                currentBgX = 0;
+                currentBgY = 0;
+                currentBgScale = 1.0;
+                bgScaleSlider.value = 100;
+                bgScaleValue.innerText = "100%";
+                updateBgTransform();
                 if (charFile) reloadAnimation();
                 checkReady();
             }
@@ -156,13 +225,13 @@
             scaleValue.innerText = "100%";
             if (charFile) {
                 charWrapper.style.display = 'flex';
-                updatePosition();
+                updateCharPosition();
                 reloadAnimation();
             }
             checkReady();
         });
 
-        // スライダー調整中
+        // キャラスライダー調整中
         scaleSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             scaleValue.innerText = val + "%";
@@ -170,12 +239,26 @@
             const img = document.getElementById('char-preview');
             if (img) img.style.transform = `scale(${currentScale})`;
         });
-
         scaleSlider.addEventListener('change', () => { reloadAnimation(); });
 
-        function updatePosition() {
+        // 背景スライダー調整中 (新設)
+        bgScaleSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            bgScaleValue.innerText = val + "%";
+            currentBgScale = val / 100;
+            bgPreview.style.transform = `scale(${currentBgScale})`;
+        });
+        bgScaleSlider.addEventListener('change', () => { reloadAnimation(); });
+
+        function updateCharPosition() {
             charWrapper.style.marginLeft = `${currentX}px`;
             charWrapper.style.marginTop = `${currentY}px`;
+        }
+
+        function updateBgTransform() {
+            bgWrapper.style.marginLeft = `${currentBgX}px`;
+            bgWrapper.style.marginTop = `${currentBgY}px`;
+            bgPreview.style.transform = `scale(${currentBgScale})`;
         }
 
         function reloadAnimation() {
@@ -208,21 +291,30 @@
             }
         }
 
-        // 合成＆自動ダウンロード
+        // 高精度ダブル変形合成＆自動ダウンロード処理
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
             exportBtn.innerText = "🎨 スタンプを美しく合成中...";
             
             try {
                 const selectedFormat = document.querySelector('input[name="format"]:checked').value;
-                const buffer = await charFile.arrayBuffer();
                 
-                const img = UPNG.decode(buffer);
-                const rgba8 = UPNG.toRGBA8(img);
+                // 1. キャラクターのデコード
+                const charBuffer = await charFile.arrayBuffer();
+                const charImg = UPNG.decode(charBuffer);
+                const charRgba8 = UPNG.toRGBA8(charImg);
                 
+                // 2. 背景（静止画）のサイズ情報を取得して仮想展開
+                const bgResponse = await fetch(bgPreview.src);
+                const bgBlob = await bgResponse.blob();
+                const bgBuffer = await bgBlob.arrayBuffer();
+                const bgImg = UPNG.decode(bgBuffer);
+                const bgRgba8 = UPNG.toRGBA8(bgImg);
+                
+                // キャンバス各種の用意
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = img.width;
-                tempCanvas.height = img.height;
+                tempCanvas.width = Math.max(charImg.width, bgImg.width);
+                tempCanvas.height = Math.max(charImg.height, bgImg.height);
                 const tempCtx = tempCanvas.getContext('2d');
                 
                 const outCanvas = document.createElement('canvas');
@@ -234,34 +326,54 @@
                 const dels = [];
                 const gifFrames = [];
                 
-                const ratio = Math.min(320 / img.width, 270 / img.height);
-                const fitW = img.width * ratio;
-                const fitH = img.height * ratio;
-                const initX = (320 - fitW) / 2;
-                const initY = (270 - fitH) / 2;
+                // 📐 数学的計算：背景画像の「object-fit: contain」再現配置
+                const bgRatio = Math.min(320 / bgImg.width, 270 / bgImg.height);
+                const bgFitW = bgImg.width * bgRatio;
+                const bgFitH = bgImg.height * bgRatio;
+                const bgInitX = (320 - bgFitW) / 2;
+                const bgInitY = (270 - bgFitH) / 2;
                 
-                const finalW = fitW * currentScale;
-                const finalH = fitH * currentScale;
-                const centerX = initX + (fitW / 2) + currentX;
-                const centerY = initY + (fitH / 2) + currentY;
-                const finalX = centerX - (finalW / 2);
-                const finalY = centerY - (finalH / 2);
+                const bgFinalW = bgFitW * currentBgScale;
+                const bgFinalH = bgFitH * currentBgScale;
+                const bgCenterX = bgInitX + (bgFitW / 2) + currentBgX;
+                const bgCenterY = bgInitY + (bgFitH / 2) + currentBgY;
+                const bgFinalX = bgCenterX - (bgFinalW / 2);
+                const bgFinalY = bgCenterY - (bgFinalH / 2);
 
-                for (let i = 0; i < img.frames.length; i++) {
-                    const imgData = tempCtx.createImageData(img.width, img.height);
-                    imgData.data.set(new Uint8Array(rgba8[i]));
-                    tempCtx.putImageData(imgData, 0, 0);
-                    
+                // 📐 数学的計算：キャラクターの「object-fit: contain」再現配置
+                const charRatio = Math.min(320 / charImg.width, 270 / charImg.height);
+                const charFitW = charImg.width * charRatio;
+                const charFitH = charImg.height * charRatio;
+                const charInitX = (320 - charFitW) / 2;
+                const charInitY = (270 - charFitH) / 2;
+                
+                const charFinalW = charFitW * currentScale;
+                const charFinalH = charFitH * currentScale;
+                const charCenterX = charInitX + (charFitW / 2) + currentX;
+                const charCenterY = charInitY + (charFitH / 2) + currentY;
+                const charFinalX = charCenterX - (charFinalW / 2);
+                const charFinalY = charCenterY - (charFinalH / 2);
+
+                // コマ（フレーム）ごとに完全結合
+                for (let i = 0; i < charImg.frames.length; i++) {
                     ctx.clearRect(0, 0, 320, 270);
-                    if (bgPreview.src) {
-                        ctx.drawImage(bgPreview, 0, 0, 320, 270);
-                    }
-                    ctx.drawImage(tempCanvas, finalX, finalY, finalW, finalH);
+                    
+                    // 【工程1】変形を加味して背景を描画
+                    const bgData = tempCtx.createImageData(bgImg.width, bgImg.height);
+                    bgData.data.set(new Uint8Array(bgRgba8[0])); // 静止画なので1コマ目
+                    tempCtx.putImageData(bgData, 0, 0);
+                    ctx.drawImage(tempCanvas, 0, 0, bgImg.width, bgImg.height, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+                    
+                    // 【工程2】変形を加味してキャラを上書き描画
+                    const charData = tempCtx.createImageData(charImg.width, charImg.height);
+                    charData.data.set(new Uint8Array(charRgba8[i]));
+                    tempCtx.putImageData(charData, 0, 0);
+                    ctx.drawImage(tempCanvas, 0, 0, charImg.width, charImg.height, charFinalX, charFinalY, charFinalW, charFinalH);
                     
                     if (selectedFormat === 'apng') {
                         const outImgData = ctx.getImageData(0, 0, 320, 270);
                         outBufs.push(outImgData.data.buffer);
-                        dels.push(img.frames[i].delay);
+                        dels.push(charImg.frames[i].delay);
                     } else {
                         gifFrames.push(outCanvas.toDataURL());
                     }
@@ -279,7 +391,7 @@
                             images: gifFrames,
                             gifWidth: 320,
                             gifHeight: 270,
-                            interval: img.frames[0].delay / 1000,
+                            interval: charImg.frames[0].delay / 1000,
                             numFrames: gifFrames.length
                         }, function (obj) {
                             if (!obj.error) {
@@ -311,7 +423,7 @@
             URL.revokeObjectURL(url);
         }
 
-        // --- ドラッグ＆タッチ操作 ---
+        // --- ドラッグ＆タッチ操作（モード切り替え対応版） ---
         let isDragging = false;
         let startX, startY;
 
@@ -319,8 +431,14 @@
             isDragging = true;
             const pageX = e.pageX || e.touches[0].pageX;
             const pageY = e.pageY || e.touches[0].pageY;
-            startX = pageX - currentX;
-            startY = pageY - currentY;
+            
+            if (activeMode === 'char') {
+                startX = pageX - currentX;
+                startY = pageY - currentY;
+            } else {
+                startX = pageX - currentBgX;
+                startY = pageY - currentBgY;
+            }
             if(e.touches) e.preventDefault();
         }
 
@@ -328,15 +446,22 @@
             if (!isDragging) return;
             const pageX = e.pageX || e.touches[0].pageX;
             const pageY = e.pageY || e.touches[0].pageY;
-            currentX = pageX - startX;
-            currentY = pageY - startY;
-            updatePosition();
+            
+            if (activeMode === 'char') {
+                currentX = pageX - startX;
+                currentY = pageY - startY;
+                updateCharPosition();
+            } else {
+                currentBgX = pageX - startX;
+                currentBgY = pageY - startY;
+                updateBgTransform();
+            }
         }
 
         function stopDrag() {
             if (isDragging) {
                 isDragging = false;
-                reloadAnimation();
+                reloadAnimation(); // 指を離したらその場でループ再生開始
             }
         }
 
