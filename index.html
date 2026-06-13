@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Anime stamp-mixer</title>
+    <title>LINE Sales Analytics Pro - Mixer</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/upng-js/2.1.0/UPNG.min.js"></script>
@@ -21,7 +21,7 @@
         <div class="max-w-6xl mx-auto flex items-center justify-between px-4">
             <div class="flex items-center">
                 <img src="top-left.png" alt="シーサーアイコン" class="h-16 w-auto block object-contain">
-                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">Anime stamp-mixer</h1>
+                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro</h1>
             </div>
             <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
                 <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
@@ -132,7 +132,7 @@
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
                     ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
-                    背景画像が「静止画」でも「動くAPNG」でも、自動判別して完全に常時再生されます。
+                    保存時、LINEの300KB制限に合わせて自動的に強力なファイル軽量化（圧縮）がかかります。
                 </p>
             </div>
             
@@ -210,7 +210,7 @@
             }
         }
 
-        // 背景画像の読み込み (★静止画PNG / アニメAPNG を自動判別して完全両対応に修正)
+        // 背景画像の読み込み
         bgInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -233,7 +233,6 @@
                 bgFrameDelays = [];
                 bgTotalDuration = 0;
 
-                // 💡【重要】静止画PNGの場合は frames 配列が存在しないため、自動で1コマの静止画として安全に処理
                 const frameCount = (bgImgData.frames && bgImgData.frames.length > 0) ? bgImgData.frames.length : 1;
 
                 for (let i = 0; i < frameCount; i++) {
@@ -248,11 +247,9 @@
 
                     bgFrames.push(bCanvas);
                     
-                    // 静止画ならダミーの100ms、APNGならそのコマの速度を適用
                     const delay = (bgImgData.frames && bgImgData.frames[i]) ? bgImgData.frames[i].delay : 100;
                     bgFrameDelays.push(delay);
                     
-                    // コマ数が2つ以上（APNG）のときだけ総ループ時間に加算
                     if (bgImgData.frames && bgImgData.frames.length > 1) {
                         bgTotalDuration += delay;
                     }
@@ -337,7 +334,7 @@
             currentBgScale = val / 100;
         });
 
-        // 🌟 Wアニメーション・静止画完全対応ループ
+        // Wアニメーション同期ループ
         function startPreviewLoop() {
             if (!isLooping) return;
             
@@ -428,7 +425,7 @@
             }
         }
 
-        // 🔄 リセットボタンの全データ初期化ロジック
+        // 🔄 リセットボタンの全データ初期化
         resetBtn.addEventListener('click', () => {
             charInput.value = '';
             bgInput.value = '';
@@ -463,10 +460,10 @@
             checkReady();
         });
 
-        // 高精度合成 ＆ ダウンロード
+        // 🔥【超軽量化】合成 ＆ ダウンロード
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
-            exportBtn.innerText = "🎨 スタンプを美しく合成中...";
+            exportBtn.innerText = "🎨 スタンプを軽量圧縮しながら合成中...";
             
             try {
                 const selectedFormat = document.querySelector('input[name="format"]:checked').value;
@@ -549,6 +546,7 @@
                 const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
                 
                 if (selectedFormat === 'apng') {
+                    // 💡【容量300KB対策の核】第4引数を「0」（インデックスカラー256色自動減色・圧縮）に設定！
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 0, dels);
                     const blob = new Blob([apngBuf], {type: 'image/png'});
                     triggerDownload(blob, `${baseName}_fixed.png`);
@@ -559,7 +557,9 @@
                             gifWidth: 320,
                             gifHeight: 270,
                             interval: (charImgData.frames ? charImgData.frames[0].delay : 100) / 1000,
-                            numFrames: gifFrames.length
+                            numFrames: gifFrames.length,
+                            sampleInterval: 10, // 減色のサンプリングを最適化して容量削減
+                            numWorkers: 2
                         }, function (obj) {
                             if (!obj.error) {
                                 const link = document.createElement('a');
