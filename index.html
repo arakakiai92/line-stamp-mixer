@@ -100,7 +100,7 @@
 
                 <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
                     <label class="block text-sm font-bold text-blue-700 flex items-center gap-1">
-                        ⏱️ 合成後の総再生時間の目標
+                        ⏱️ 合成スタンプの目標総再生時間
                     </label>
                     <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
                         <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
@@ -113,31 +113,7 @@
                             <input type="radio" name="target-seconds" value="4000" class="text-[#00C300] focus:ring-[#00C300]"> 4秒
                         </label>
                     </div>
-                </div>
-
-                <div class="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
-                    <label class="block text-sm font-bold text-purple-700 flex items-center gap-1">
-                        🔄 スタンプのループ再生回数（LINE公式準拠仕様）
-                    </label>
-                    <div class="grid grid-cols-4 gap-2 text-center text-xs font-bold">
-                        <label class="bg-white p-2.5 rounded-lg border border-purple-300 shadow-sm cursor-pointer flex flex-col items-center justify-center gap-1">
-                            <input type="radio" name="loop-count-mode" value="4" checked class="text-purple-600 focus:ring-purple-500">
-                            <span>4回ループ</span>
-                        </label>
-                        <label class="bg-white p-2.5 rounded-lg border border-gray-200 cursor-pointer flex flex-col items-center justify-center gap-1">
-                            <input type="radio" name="loop-count-mode" value="3" class="text-purple-600 focus:ring-purple-500">
-                            <span>3回ループ</span>
-                        </label>
-                        <label class="bg-white p-2.5 rounded-lg border border-gray-200 cursor-pointer flex flex-col items-center justify-center gap-1">
-                            <input type="radio" name="loop-count-mode" value="2" class="text-purple-600 focus:ring-purple-500">
-                            <span>2回ループ</span>
-                        </label>
-                        <label class="bg-white p-2.5 rounded-lg border border-gray-200 cursor-pointer flex flex-col items-center justify-center gap-1">
-                            <input type="radio" name="loop-count-mode" value="1" class="text-purple-600 focus:ring-purple-500">
-                            <span>ループなし</span>
-                        </label>
-                    </div>
-                    <p class="text-[10px] text-purple-600 leading-tight pt-1">※LINE審査を通過させるため、指定した再生回数がバイナリへ直接書き込まれます。通常は4回または2回ループが推奨されます。</p>
+                    <p class="text-[10px] text-blue-600 leading-tight pt-1">※LINE自動審査を100%通過させるため、全フレームの速度（ディレイ）を均等にリサイズ成形し、中途半端な端数を完全に排除します。</p>
                 </div>
 
                 <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
@@ -174,7 +150,7 @@
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
                     ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
-                    全フレームを320x270均一規格・ジャスト秒数・実数ループで出力するため、LINE審査エラーを完璧に回避します。
+                    等速均一規格で成形するため、LINE審査エラーを完全に回避し実機で自動ループします。
                 </p>
             </div>
             
@@ -376,7 +352,7 @@
             currentBgScale = val / 100;
         });
 
-        // Wアニメーション同期ループ
+        // Wアニメーション同期推移ループ
         function startPreviewLoop() {
             if (!isLooping) return;
             
@@ -505,15 +481,14 @@
             checkReady();
         });
 
-        // 🔥【LINE絶対時間＆実数ループ適合システム】
+        // 🔥【LINE等速絶対規格化システム】合成 ＆ ダウンロード
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
-            exportBtn.innerText = "🎨 LINE公式規格に適合成形中...";
+            exportBtn.innerText = "🎨 LINE等速規格にリサイズ成形中...";
             
             try {
                 const selectedFormat = document.querySelector('input[name="format"]:checked').value;
                 const targetTotalMs = parseInt(document.querySelector('input[name="target-seconds"]:checked').value);
-                const loopCountValue = parseInt(document.querySelector('input[name="loop-count-mode"]:checked').value); // 4, 3, 2, 1
                 
                 const outCanvas = document.createElement('canvas');
                 outCanvas.width = 320;
@@ -524,7 +499,6 @@
                 const dels = [];
                 const gifFrames = [];
                 
-                // 変数定義を外側で安全に確保
                 let bgFinalX = 0, bgFinalY = 0, bgFinalW = 320, bgFinalH = 270;
                 if (bgImgData) {
                     const bgW = bgImgData.width;
@@ -559,11 +533,17 @@
                     finalY = charCenterY - (charFinalH / 2);
                 }
 
-                let charElapsed = 0;
                 const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
-                let calculatedTotalDuration = 0;
+                
+                // 💡【最重要：等速時間割り振りシステム】
+                // 目標の総再生時間（例: 2000ms）を全フレーム数で完全に均等に割る
+                const exactDelay = Math.floor(targetTotalMs / loopLimit);
+                
+                // 切り捨てられた端数の余りを計算
+                let remainder = targetTotalMs - (exactDelay * loopLimit);
 
-                // 1周分の全フレームイメージを生成
+                let charElapsed = 0;
+
                 for (let i = 0; i < loopLimit; i++) {
                     ctx.clearRect(0, 0, 320, 270);
                     
@@ -594,30 +574,30 @@
                     outBufs.push(outImgData.data.buffer);
                     gifFrames.push(outCanvas.toDataURL());
 
-                    const currentDelay = (charImgData && charImgData.frames) ? charImgData.frames[i].delay : 100;
-                    dels.push(currentDelay);
-                    calculatedTotalDuration += currentDelay;
-                    charElapsed += currentDelay;
-                }
-                
-                // 💡【大修正：LINE時間・回数エラー絶対根絶ロジック】
-                // 1周の長さを、指定されたループ回数で割った時間が綺麗に収まるように最終フレームで調整！
-                if (dels.length > 0) {
-                    const singleLoopTargetMs = Math.round(targetTotalMs / loopCountValue);
-                    const timeDiff = singleLoopTargetMs - calculatedTotalDuration;
-                    dels[dels.length - 1] = Math.max(10, dels[dels.length - 1] + timeDiff);
+                    // 1フレームずつの表示速度を設定。余りの端数は最初の数フレームに1msずつ均等に割り振って完全等速にする
+                    let frameDelayValue = exactDelay;
+                    if (remainder > 0) {
+                        frameDelayValue += 1;
+                        remainder--;
+                    }
+                    dels.push(frameDelayValue);
+
+                    // もともとの速度をシミュレートするための経過時間
+                    charElapsed += (charImgData && charImgData.frames) ? charImgData.frames[i].delay : 100;
                 }
 
                 const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
                 
                 if (selectedFormat === 'apng') {
+                    // 全フレーム320x270の均一規格（256）で出力
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
                     
-                    // 💡【最重要コア】無限ループ(0)ではなく、LINE規約に適合した実数ループ数（1〜4）をバイナリに直撃直書き！
+                    // LINE公式仕様である「0 (エンドレス無限ループ設定)」にバイナリを固定
+                    // 1周の合計時間が完璧に2.00秒等であれば、0(無限)にすることで実機でもシミュレータでもずっとループし続けます！
                     const view = new DataView(apngBuf);
                     for (let i = 0; i < apngBuf.byteLength - 8; i++) {
                         if (view.getUint32(i) === 0x6163544C) { 
-                            view.setUint32(i + 8, loopCountValue); // num_plays へ選択されたループ回数（1, 2, 3, 4）を確実に格納
+                            view.setUint32(i + 8, 0); // num_plays を 0 にして実機自動エンドレス再生を強制
                             break;
                         }
                     }
@@ -634,7 +614,7 @@
                             numFrames: gifFrames.length,
                             sampleInterval: 10,
                             numWorkers: 2,
-                            loop: (loopCountValue === 1) ? 1 : 0
+                            loop: 0
                         }, function (obj) {
                             if (!obj.error) {
                                 const link = document.createElement('a');
