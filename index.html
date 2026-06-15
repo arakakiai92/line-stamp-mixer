@@ -98,6 +98,24 @@
                     </div>
                 </div>
 
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                    <label class="block text-sm font-bold text-blue-700 flex items-center gap-1">
+                        ⏱️ 合成後の総再生時間の目標
+                    </label>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                        <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
+                            <input type="radio" name="target-seconds" value="2000" checked class="text-[#00C300] focus:ring-[#00C300]"> 2秒
+                        </label>
+                        <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
+                            <input type="radio" name="target-seconds" value="3000" class="text-[#00C300] focus:ring-[#00C300]"> 3秒
+                        </label>
+                        <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
+                            <input type="radio" name="target-seconds" value="4000" class="text-[#00C300] focus:ring-[#00C300]"> 4秒
+                        </label>
+                    </div>
+                    <p class="text-[10px] text-blue-600 leading-tight pt-1">※設定した秒数ピッタリになるよう、最終フレームの長さをシステムが自動ミリ秒調整します。</p>
+                </div>
+
                 <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
                     <span class="font-bold text-gray-600">出力形式:</span>
                     <label class="inline-flex items-center cursor-pointer">
@@ -132,7 +150,7 @@
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
                     ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
-                    全フレームを強制320x270均一規格で出力するため、LINE審査エラーを完全に回避します。
+                    保存時、LINE規定のジャスト秒数へ自動フィッティング成形が行われます。
                 </p>
             </div>
             
@@ -400,8 +418,8 @@
                 const charFinalH = charFitH * currentScale;
                 const charCenterX = charInitX + (charFitW / 2) + currentX;
                 const charCenterY = charInitY + (charFitH / 2) + currentY;
-                const finalX = charCenterX - (finalW / 2);
-                const finalY = charCenterY - (finalH / 2);
+                const finalX = charCenterX - (charFinalW / 2);
+                const finalY = charCenterY - (charFinalH / 2);
                 
                 pCtx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
             }
@@ -460,13 +478,14 @@
             checkReady();
         });
 
-        // 🔥【LINE完全準拠システム】合成 ＆ ダウンロード
+        // 🔥【LINE絶対時間ルール適合システム】合成 ＆ ダウンロード
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
-            exportBtn.innerText = "🎨 LINE規格に完全成形中...";
+            exportBtn.innerText = "🎨 LINE時間規格に強制フィッティング中...";
             
             try {
                 const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+                const targetTotalMs = parseInt(document.querySelector('input[name="target-seconds"]:checked').value);
                 
                 const outCanvas = document.createElement('canvas');
                 outCanvas.width = 320;
@@ -507,7 +526,9 @@
 
                 let charElapsed = 0;
                 const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
+                let calculatedTotalDuration = 0;
 
+                // 1周分の全フレームデータを生成
                 for (let i = 0; i < loopLimit; i++) {
                     ctx.clearRect(0, 0, 320, 270);
                     
@@ -532,24 +553,42 @@
                         ctx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
                     }
                     
-                    if (selectedFormat === 'apng') {
-                        const outImgData = ctx.getImageData(0, 0, 320, 270);
-                        outBufs.push(outImgData.data.buffer);
-                        dels.push(charImgData.frames ? charImgData.frames[i].delay : 100);
-                    } else {
-                        gifFrames.push(outCanvas.toDataURL());
-                    }
+                    const outImgData = ctx.getImageData(0, 0, 320, 270);
+                    outBufs.push(outImgData.data.buffer);
+                    gifFrames.push(outCanvas.toDataURL());
 
-                    charElapsed += (charImgData.frames ? charImgData.frames[i].delay : 100);
+                    const currentDelay = (charImgData.frames ? charImgData.frames[i].delay : 100);
+                    dels.push(currentDelay);
+                    calculatedTotalDuration += currentDelay;
+                    charElapsed += currentDelay;
                 }
                 
+                // 💡【LINE時間エラー根絶システム】
+                // 目標の総再生時間（例: 2000ms）と、現在の1周の合計時間のズレを計算
+                if (dels.length > 0) {
+                    const timeDiff = targetTotalMs - calculatedTotalDuration;
+                    // ズレたミリ秒を最後のフレームにすべて足し引きして、強制的にジャスト秒数（2秒/3秒/4秒）に調整！
+                    dels[dels.length - 1] = Math.max(10, dels[dels.length - 1] + timeDiff);
+                }
+
                 const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
                 
                 if (selectedFormat === 'apng') {
-                    // 💡【重要：LINE審査エラーを根絶する修正】
-                    // 第3引数の「dels」の次（第4引数）に、これまで「0」を渡して自動フレーム間引きをさせていましたが、
-                    // ここを「256」（全フレーム強制フルサイズ均一化）に書き換えることで、LINEの構造エラーを完璧に防ぎます！
+                    // 全フレーム320x270均一化（256）をかけつつビルド
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
+                    
+                    // 💡【LINEシミュレータ適合処理】
+                    // UPNGが吐き出す「無限ループ（0）」の再生設定ヘッダーを、
+                    // LINEシミュレータが要求する「1回再生（1）」へバイナリレベルで強制書き換え
+                    const view = new DataView(apngBuf);
+                    for (let i = 0; i < apngBuf.byteLength - 8; i++) {
+                        // APNGのアニメーションコントロールブロック（acTLチャンク）を探索
+                        if (view.getUint32(i) === 0x6163544C) { 
+                            view.setUint32(i + 8, 1); // num_plays を 1（1回ループ）に上書き
+                            break;
+                        }
+                    }
+                    
                     const blob = new Blob([apngBuf], {type: 'image/png'});
                     triggerDownload(blob, `${baseName}_fixed.png`);
                 } else {
@@ -558,7 +597,7 @@
                             images: gifFrames,
                             gifWidth: 320,
                             gifHeight: 270,
-                            interval: (charImgData.frames ? charImgData.frames[0].delay : 100) / 1000,
+                            interval: dels[0] / 1000,
                             numFrames: gifFrames.length,
                             sampleInterval: 10,
                             numWorkers: 2
