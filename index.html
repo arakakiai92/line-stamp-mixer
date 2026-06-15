@@ -352,7 +352,7 @@
             currentBgScale = val / 100;
         });
 
-        // Wアニメーション同期ループ
+        // Wアニメーション同期ループ（未読み込み時のバグを修正）
         function startPreviewLoop() {
             if (!isLooping) return;
             
@@ -496,10 +496,12 @@
                 const dels = [];
                 const gifFrames = [];
                 
-                // 背景配置位置計算
-                const bgRatio = Math.min(320 / bgImgData.width, 270 / bgImgData.height);
-                const bgFitW = bgImgData.width * bgRatio;
-                const bgFitH = bgImgData.height * bgRatio;
+                // 背景配置位置計算（安全設計）
+                const bgW = bgImgData ? bgImgData.width : 320;
+                const bgH = bgImgData ? bgImgData.height : 270;
+                const bgRatio = Math.min(320 / bgW, 270 / bgH);
+                const bgFitW = bgW * bgRatio;
+                const bgFitH = bgH * bgRatio;
                 const bgInitX = (320 - bgFitW) / 2;
                 const bgInitY = (270 - bgFitH) / 2;
                 
@@ -510,10 +512,12 @@
                 const bgFinalX = bgCenterX - (bgFinalW / 2);
                 const bgFinalY = bgCenterY - (bgFinalH / 2);
 
-                // キャラ配置位置計算
-                const charRatio = Math.min(320 / charImgData.width, 270 / charImgData.height);
-                const charFitW = charImgData.width * charRatio;
-                const charFitH = charImgData.height * charRatio;
+                // キャラ配置位置計算（安全設計）
+                const charW = charImgData ? charImgData.width : 320;
+                const charH = charImgData ? charImgData.height : 270;
+                const charRatio = Math.min(320 / charW, 270 / charH);
+                const charFitW = charW * charRatio;
+                const charFitH = charH * charRatio;
                 const charInitX = (320 - charFitW) / 2;
                 const charInitY = (270 - charFitH) / 2;
                 
@@ -528,7 +532,6 @@
                 const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
                 let calculatedTotalDuration = 0;
 
-                // 1周分の全フレームデータを生成
                 for (let i = 0; i < loopLimit; i++) {
                     ctx.clearRect(0, 0, 320, 270);
                     
@@ -545,8 +548,10 @@
                         }
                     }
                     
-                    const frameBgCanvas = bgFrames[exportBgFrameIdx];
-                    ctx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+                    if (bgFrames.length > 0) {
+                        const frameBgCanvas = bgFrames[exportBgFrameIdx];
+                        ctx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+                    }
                     
                     if (charFrames.length > 0) {
                         const frameCanvas = charFrames[i];
@@ -557,13 +562,13 @@
                     outBufs.push(outImgData.data.buffer);
                     gifFrames.push(outCanvas.toDataURL());
 
-                    const currentDelay = (charImgData.frames ? charImgData.frames[i].delay : 100);
+                    const currentDelay = (charImgData && charImgData.frames) ? charImgData.frames[i].delay : 100;
                     dels.push(currentDelay);
                     calculatedTotalDuration += currentDelay;
                     charElapsed += currentDelay;
                 }
                 
-                // 💡【LINE時間エラー根絶処理】目標時間とのズレを最終フレームで完璧に相殺
+                // ⏱️ 目標時間とのズレを最終フレームで相殺
                 if (dels.length > 0) {
                     const timeDiff = targetTotalMs - calculatedTotalDuration;
                     dels[dels.length - 1] = Math.max(10, dels[dels.length - 1] + timeDiff);
@@ -572,10 +577,9 @@
                 const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
                 
                 if (selectedFormat === 'apng') {
-                    // 全フレーム320x270均一規格（256）を適用してバイナリビルド
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
                     
-                    // acTLチャンクを探索し、LINE要求仕様である「1回再生（ループ数1）」へ直接書き換え
+                    // acTLチャンクを探索し、LINE仕様（ループ数1）へ直接書き換え
                     const view = new DataView(apngBuf);
                     for (let i = 0; i < apngBuf.byteLength - 8; i++) {
                         if (view.getUint32(i) === 0x6163544C) { 
