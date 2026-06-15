@@ -117,17 +117,27 @@
 
                 <div class="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
                     <label class="block text-sm font-bold text-purple-700 flex items-center gap-1">
-                        🔄 スタンプの再生ループ設定（書き出しファイルに直接記憶されます）
+                        🔄 スタンプのループ再生回数（LINE公式準拠仕様）
                     </label>
-                    <div class="grid grid-cols-2 gap-4 text-center text-xs font-bold">
-                        <label class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-pointer flex items-center justify-center gap-2 text-gray-800">
-                            <input type="radio" name="loop-mode" value="infinite" checked class="text-green-600 focus:ring-green-500"> 🔄 ループする（自動エンドレス）
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs font-bold">
+                        <label class="bg-white p-2.5 rounded-lg border border-purple-300 shadow-sm cursor-pointer flex flex-col items-center justify-center gap-1">
+                            <input type="radio" name="loop-count-mode" value="4" checked class="text-purple-600 focus:ring-purple-500">
+                            <span>4回ループ</span>
                         </label>
-                        <label class="bg-white p-3 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-2 text-gray-800">
-                            <input type="radio" name="loop-mode" value="line" class="text-green-600 focus:ring-green-500"> ⏹️ ループなし（1回で停止）
+                        <label class="bg-white p-2.5 rounded-lg border border-gray-200 cursor-pointer flex flex-col items-center justify-center gap-1">
+                            <input type="radio" name="loop-count-mode" value="3" class="text-purple-600 focus:ring-purple-500">
+                            <span>3回ループ</span>
+                        </label>
+                        <label class="bg-white p-2.5 rounded-lg border border-gray-200 cursor-pointer flex flex-col items-center justify-center gap-1">
+                            <input type="radio" name="loop-count-mode" value="2" class="text-purple-600 focus:ring-purple-500">
+                            <span>2回ループ</span>
+                        </label>
+                        <label class="bg-white p-2.5 rounded-lg border border-gray-200 cursor-pointer flex flex-col items-center justify-center gap-1">
+                            <input type="radio" name="loop-count-mode" value="1" class="text-purple-600 focus:ring-purple-500">
+                            <span>ループなし</span>
                         </label>
                     </div>
-                    <p class="text-[10px] text-purple-600 leading-tight pt-1">※「ループする」でも総時間が2.00秒等に自動成形されるため、LINEシミュレーターも実機トークもエラーを回避して自動ループされます。</p>
+                    <p class="text-[10px] text-purple-600 leading-tight pt-1">※LINE審査を通過させるため、指定した再生回数がバイナリへ直接書き込まれます。通常は4回または2回ループが推奨されます。</p>
                 </div>
 
                 <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
@@ -164,7 +174,7 @@
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
                     ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
-                    全フレームを320x270均一規格・ジャスト秒数で出力するため、LINE審査エラーを完璧に回避します。
+                    全フレームを320x270均一規格・ジャスト秒数・実数ループで出力するため、LINE審査エラーを完璧に回避します。
                 </p>
             </div>
             
@@ -366,7 +376,7 @@
             currentBgScale = val / 100;
         });
 
-        // Wアニメーション同期推移ループ
+        // Wアニメーション同期ループ
         function startPreviewLoop() {
             if (!isLooping) return;
             
@@ -495,15 +505,15 @@
             checkReady();
         });
 
-        // 🟢 合成 ＆ ダウンロード
+        // 🔥【LINE絶対時間＆実数ループ適合システム】
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
-            exportBtn.innerText = "🎨 LINE時間規格に強制フィッティング中...";
+            exportBtn.innerText = "🎨 LINE公式規格に適合成形中...";
             
             try {
                 const selectedFormat = document.querySelector('input[name="format"]:checked').value;
                 const targetTotalMs = parseInt(document.querySelector('input[name="target-seconds"]:checked').value);
-                const loopMode = document.querySelector('input[name="loop-mode"]:checked').value; // 'infinite' または 'line'
+                const loopCountValue = parseInt(document.querySelector('input[name="loop-count-mode"]:checked').value); // 4, 3, 2, 1
                 
                 const outCanvas = document.createElement('canvas');
                 outCanvas.width = 320;
@@ -514,7 +524,7 @@
                 const dels = [];
                 const gifFrames = [];
                 
-                // 💡【修正点】未定義エラー（not defined）を完全に根絶するため、変数定義を安全に分離
+                // 変数定義を外側で安全に確保
                 let bgFinalX = 0, bgFinalY = 0, bgFinalW = 320, bgFinalH = 270;
                 if (bgImgData) {
                     const bgW = bgImgData.width;
@@ -553,6 +563,7 @@
                 const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
                 let calculatedTotalDuration = 0;
 
+                // 1周分の全フレームイメージを生成
                 for (let i = 0; i < loopLimit; i++) {
                     ctx.clearRect(0, 0, 320, 270);
                     
@@ -589,8 +600,11 @@
                     charElapsed += currentDelay;
                 }
                 
+                // 💡【大修正：LINE時間・回数エラー絶対根絶ロジック】
+                // 1周の長さを、指定されたループ回数で割った時間が綺麗に収まるように最終フレームで調整！
                 if (dels.length > 0) {
-                    const timeDiff = targetTotalMs - calculatedTotalDuration;
+                    const singleLoopTargetMs = Math.round(targetTotalMs / loopCountValue);
+                    const timeDiff = singleLoopTargetMs - calculatedTotalDuration;
                     dels[dels.length - 1] = Math.max(10, dels[dels.length - 1] + timeDiff);
                 }
 
@@ -598,12 +612,12 @@
                 
                 if (selectedFormat === 'apng') {
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
-                    const view = new DataView(apngBuf);
-                    const targetNumPlays = (loopMode === 'infinite') ? 0 : 1; 
                     
+                    // 💡【最重要コア】無限ループ(0)ではなく、LINE規約に適合した実数ループ数（1〜4）をバイナリに直撃直書き！
+                    const view = new DataView(apngBuf);
                     for (let i = 0; i < apngBuf.byteLength - 8; i++) {
                         if (view.getUint32(i) === 0x6163544C) { 
-                            view.setUint32(i + 8, targetNumPlays); 
+                            view.setUint32(i + 8, loopCountValue); // num_plays へ選択されたループ回数（1, 2, 3, 4）を確実に格納
                             break;
                         }
                     }
@@ -620,7 +634,7 @@
                             numFrames: gifFrames.length,
                             sampleInterval: 10,
                             numWorkers: 2,
-                            loop: (loopMode === 'infinite') ? 0 : 1
+                            loop: (loopCountValue === 1) ? 1 : 0
                         }, function (obj) {
                             if (!obj.error) {
                                 const link = document.createElement('a');
