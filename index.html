@@ -150,7 +150,7 @@
                 
                 <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
                     ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
-                    保存時、LINE規定のジャスト秒数へ自動フィッティング成形が行われます。
+                    全フレームを320x270均一規格・ジャスト秒数で出力するため、LINE審査エラーを完璧に回避します。
                 </p>
             </div>
             
@@ -478,7 +478,7 @@
             checkReady();
         });
 
-        // 🔥【LINE絶対時間ルール適合システム】合成 ＆ ダウンロード
+        // 🔥【LINE絶対規約準拠】合成 ＆ ダウンロード
         exportBtn.addEventListener('click', async () => {
             exportBtn.disabled = true;
             exportBtn.innerText = "🎨 LINE時間規格に強制フィッティング中...";
@@ -521,8 +521,8 @@
                 const charFinalH = charFitH * currentScale;
                 const charCenterX = charInitX + (charFitW / 2) + currentX;
                 const charCenterY = charInitY + (charFitH / 2) + currentY;
-                const finalX = charCenterX - (finalW / 2);
-                const finalY = charCenterY - (finalH / 2);
+                const finalX = charCenterX - (charFinalW / 2);
+                const finalY = charCenterY - (charFinalH / 2);
 
                 let charElapsed = 0;
                 const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
@@ -563,28 +563,23 @@
                     charElapsed += currentDelay;
                 }
                 
-                // 💡【LINE時間エラー根絶システム】
-                // 目標の総再生時間（例: 2000ms）と、現在の1周の合計時間のズレを計算
+                // 💡【LINE時間エラー根絶処理】目標時間とのズレを最終フレームで完璧に相殺
                 if (dels.length > 0) {
                     const timeDiff = targetTotalMs - calculatedTotalDuration;
-                    // ズレたミリ秒を最後のフレームにすべて足し引きして、強制的にジャスト秒数（2秒/3秒/4秒）に調整！
                     dels[dels.length - 1] = Math.max(10, dels[dels.length - 1] + timeDiff);
                 }
 
                 const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
                 
                 if (selectedFormat === 'apng') {
-                    // 全フレーム320x270均一化（256）をかけつつビルド
+                    // 全フレーム320x270均一規格（256）を適用してバイナリビルド
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
                     
-                    // 💡【LINEシミュレータ適合処理】
-                    // UPNGが吐き出す「無限ループ（0）」の再生設定ヘッダーを、
-                    // LINEシミュレータが要求する「1回再生（1）」へバイナリレベルで強制書き換え
+                    // acTLチャンクを探索し、LINE要求仕様である「1回再生（ループ数1）」へ直接書き換え
                     const view = new DataView(apngBuf);
                     for (let i = 0; i < apngBuf.byteLength - 8; i++) {
-                        // APNGのアニメーションコントロールブロック（acTLチャンク）を探索
                         if (view.getUint32(i) === 0x6163544C) { 
-                            view.setUint32(i + 8, 1); // num_plays を 1（1回ループ）に上書き
+                            view.setUint32(i + 8, 1); 
                             break;
                         }
                     }
