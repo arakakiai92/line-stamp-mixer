@@ -117,17 +117,17 @@
 
                 <div class="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
                     <label class="block text-sm font-bold text-purple-700 flex items-center gap-1">
-                        🔄 スタンプの再生ループ設定（この仕様がファイルに保存されます）
+                        🔄 スタンプの再生ループ設定（書き出しファイルに直接記憶されます）
                     </label>
                     <div class="grid grid-cols-2 gap-4 text-center text-xs font-bold">
                         <label class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-pointer flex items-center justify-center gap-2 text-gray-800">
-                            <input type="radio" name="loop-mode" value="infinite" checked class="text-green-600 focus:ring-green-500"> 🔄 ループする（エンドレス）
+                            <input type="radio" name="loop-mode" value="infinite" checked class="text-green-600 focus:ring-green-500"> 🔄 ループする（自動エンドレス）
                         </label>
                         <label class="bg-white p-3 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-2 text-gray-800">
-                            <input type="radio" name="loop-mode" value="line" class="text-green-600 focus:ring-green-500"> ⏹️ ループなし（1回再生で停止）
+                            <input type="radio" name="loop-mode" value="line" class="text-green-600 focus:ring-green-500"> ⏹️ ループなし（1回で停止）
                         </label>
                     </div>
-                    <p class="text-[10px] text-purple-600 leading-tight pt-1">※「ループする」を選択して書き出しても、1周の合計時間がジャスト秒数（2秒等）に自動修正されるため、LINEシミュレーターで弾かれずに実機でも自動ループ再生されます。</p>
+                    <p class="text-[10px] text-purple-600 leading-tight pt-1">※「ループする」でも総時間が2.00秒等に自動成形されるため、LINEシミュレーターも実機トークもエラーを回避して自動ループされます。</p>
                 </div>
 
                 <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
@@ -435,8 +435,8 @@
                 const charFinalH = charFitH * currentScale;
                 const charCenterX = charInitX + (charFitW / 2) + currentX;
                 const charCenterY = charInitY + (charFitH / 2) + currentY;
-                const finalX = charCenterX - (finalW / 2);
-                const finalY = charCenterY - (finalH / 2);
+                const finalX = charCenterX - (charFinalW / 2);
+                const finalY = charCenterY - (charFinalH / 2);
                 
                 pCtx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
             }
@@ -514,35 +514,40 @@
                 const dels = [];
                 const gifFrames = [];
                 
-                const bgW = bgImgData ? bgImgData.width : 320;
-                const bgH = bgImgData ? bgImgData.height : 270;
-                const bgRatio = Math.min(320 / bgW, 270 / bgH);
-                const bgFitW = bgW * bgRatio;
-                const bgFitH = bgH * bgRatio;
-                const bgInitX = (320 - bgFitW) / 2;
-                const bgInitY = (270 - bgFitH) / 2;
-                
-                const bgFinalW = bgFitW * currentBgScale;
-                const bgFinalH = bgFitH * currentBgScale;
-                const bgCenterX = bgInitX + (bgFitW / 2) + currentBgX;
-                const bgCenterY = bgInitY + (bgFitH / 2) + currentBgY;
-                const bgFinalX = bgCenterX - (bgFinalW / 2);
-                const bgFinalY = bgCenterY - (bgFinalH / 2);
+                // 💡【修正点】未定義エラー（not defined）を完全に根絶するため、変数定義を安全に分離
+                let bgFinalX = 0, bgFinalY = 0, bgFinalW = 320, bgFinalH = 270;
+                if (bgImgData) {
+                    const bgW = bgImgData.width;
+                    const bgH = bgImgData.height;
+                    const bgRatio = Math.min(320 / bgW, 270 / bgH);
+                    const bgFitW = bgW * bgRatio;
+                    const bgFitH = bgH * bgRatio;
+                    const bgInitX = (320 - bgFitW) / 2;
+                    const bgInitY = (270 - bgFitH) / 2;
+                    bgFinalW = bgFitW * currentBgScale;
+                    bgFinalH = bgFitH * currentBgScale;
+                    const bgCenterX = bgInitX + (bgFitW / 2) + currentBgX;
+                    const bgCenterY = bgInitY + (bgFitH / 2) + currentBgY;
+                    bgFinalX = bgCenterX - (bgFinalW / 2);
+                    bgFinalY = bgCenterY - (bgFinalH / 2);
+                }
 
-                const charW = charImgData ? charImgData.width : 320;
-                const charH = charImgData ? charImgData.height : 270;
-                const charRatio = Math.min(320 / charW, 270 / charH);
-                const charFitW = charW * charRatio;
-                const charFitH = charH * charRatio;
-                const charInitX = (320 - charFitW) / 2;
-                const charInitY = (270 - charFitH) / 2;
-                
-                const charFinalW = charFitW * currentScale;
-                const charFinalH = charH * currentScale;
-                const charCenterX = charInitX + (charFitW / 2) + currentX;
-                const charCenterY = charInitY + (charFitH / 2) + currentY;
-                const finalX = charCenterX - (finalW / 2);
-                const finalY = charCenterY - (charFinalH / 2);
+                let finalX = 0, finalY = 0, charFinalW = 320, charFinalH = 270;
+                if (charImgData) {
+                    const charW = charImgData.width;
+                    const charH = charImgData.height;
+                    const charRatio = Math.min(320 / charW, 270 / charH);
+                    const charFitW = charW * charRatio;
+                    const charFitH = charH * charRatio;
+                    const charInitX = (320 - charFitW) / 2;
+                    const charInitY = (270 - charFitH) / 2;
+                    charFinalW = charFitW * currentScale;
+                    charFinalH = charFitH * currentScale;
+                    const charCenterX = charInitX + (charFitW / 2) + currentX;
+                    const charCenterY = charInitY + (charFitH / 2) + currentY;
+                    finalX = charCenterX - (charFinalW / 2);
+                    finalY = charCenterY - (charFinalH / 2);
+                }
 
                 let charElapsed = 0;
                 const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
@@ -584,7 +589,6 @@
                     charElapsed += currentDelay;
                 }
                 
-                // ⏱️ 目標時間とのズレを最終フレームで相殺（ここで2.00秒ピッタリにする）
                 if (dels.length > 0) {
                     const timeDiff = targetTotalMs - calculatedTotalDuration;
                     dels[dels.length - 1] = Math.max(10, dels[dels.length - 1] + timeDiff);
@@ -594,13 +598,7 @@
                 
                 if (selectedFormat === 'apng') {
                     const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
-                    
-                    // 💡【LINE自動無限ループ適合ハック】
                     const view = new DataView(apngBuf);
-                    
-                    // 「ループする」の時は値「0（無限）」を書き込みます。
-                    // LINEは1周の合計時間がジャスト秒数なら、0(無限)であっても受け入れ、実機で自動ループを走らせます。
-                    // 「ループなし」の時は値「1（1回再生）」を書き込み、最初の1周だけで静止させます。
                     const targetNumPlays = (loopMode === 'infinite') ? 0 : 1; 
                     
                     for (let i = 0; i < apngBuf.byteLength - 8; i++) {
