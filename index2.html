@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LINE Sales Analytics Pro - Mixer</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/upng-js/2.1.0/UPNG.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #ffffff; font-family: sans-serif; }
+        .preview-container { position: relative; width: 320px; height: 270px; touch-action: none; }
+    </style>
+</head>
+<body class="text-gray-800 pb-4">
+
+    <header class="bg-[#00C300] text-white shadow-md sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto flex items-center justify-between px-4">
+            <div class="flex items-center">
+                <img src="top-left.png" alt="シーサーアイコン" class="h-16 w-auto block object-contain">
+                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro</h1>
+            </div>
+            <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
+                <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    🔗スタンプ/絵文字 ZIPメーカー
+                </a>
+                <a href="https://arakakiai92.github.io/-arakakiai92-line-sales-analytics-lite/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    📊売上分析簡易版
+                </a>
+                <a href="https://sales-graph-analyzer.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
+                    📊売上スクショ分析
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <main class="p-4 max-w-6xl mx-auto mt-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-5">
+                <h2 class="text-base font-bold text-gray-700 border-b pb-2 flex items-center gap-2">
+                    🔧 アニメスタンプ合成（素材設定）
+                </h2>
+                
+                <div class="space-y-1">
+                    <label class="block text-sm font-bold text-gray-700">👇 現在ドラッグ操作する対象を選択してください:</label>
+                    <div class="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-xl border text-sm font-bold">
+                        <button id="mode-char-btn" class="py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent">
+                            🏃‍♂️ キャラクターを動かす
+                        </button>
+                        <button id="mode-bg-btn" class="py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent">
+                            🖼️ 背景画像を動かす
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3 border-t pt-3">
+                    <div class="space-y-1">
+                        <label class="block text-sm font-bold text-gray-700">1. キャラクターAPNG（動くPNG）:</label>
+                        <input type="file" id="char-input" accept="image/png" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                            file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
+                            hover:file:bg-green-100 cursor-pointer transition" />
+                    </div>
+                    
+                    <div id="char-scale-card" class="p-4 bg-[#fff9e6] border border-[#ffe0b2] rounded-xl space-y-2">
+                        <label class="block text-sm font-bold text-[#b78103] flex items-center gap-1">
+                            🔎 キャラクターの大きさ調節
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="scale-slider" min="50" max="200" value="100" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f59e0b]">
+                            <span id="scale-value" class="text-sm font-black text-[#b78103] min-w-[45px] text-right">100%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3 border-t pt-3">
+                    <div class="space-y-1">
+                        <label class="block text-sm font-bold text-gray-700">2. 背景画像（APNG / 静止画PNG）:</label>
+                        <input type="file" id="bg-input" accept="image/png" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+                            file:text-sm file:font-bold file:bg-green-50 file:text-[#00C300]
+                            hover:file:bg-green-100 cursor-pointer transition" />
+                    </div>
+                    
+                    <div id="bg-scale-card" class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                        <label class="block text-sm font-bold text-emerald-700 flex items-center gap-1">
+                            🔎 背景画像の大きさ調節
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="bg-scale-slider" min="50" max="200" value="100" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                            <span id="bg-scale-value" class="text-sm font-black text-emerald-700 min-w-[45px] text-right">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                    <label class="block text-sm font-bold text-blue-700 flex items-center gap-1">
+                        ⏱️ 合成スタンプの目標総再生時間
+                    </label>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                        <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
+                            <input type="radio" name="target-seconds" value="2000" checked class="text-[#00C300] focus:ring-[#00C300]"> 2秒
+                        </label>
+                        <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
+                            <input type="radio" name="target-seconds" value="3000" class="text-[#00C300] focus:ring-[#00C300]"> 3秒
+                        </label>
+                        <label class="bg-white p-2 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-center gap-1">
+                            <input type="radio" name="target-seconds" value="4000" class="text-[#00C300] focus:ring-[#00C300]"> 4秒
+                        </label>
+                    </div>
+                    <p class="text-[10px] text-blue-600 leading-tight pt-1">※LINE自動審査を100%通過させるため、全フレームの速度（ディレイ）を均等にリサイズ成形し、中途半端な端数を完全に排除します。</p>
+                </div>
+
+                <div class="flex items-center justify-center gap-6 p-2 bg-gray-50 rounded-lg border text-sm font-medium">
+                    <span class="font-bold text-gray-600">出力形式:</span>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="format" value="apng" checked class="text-[#00C300] focus:ring-[#00C300]">
+                        <span class="ml-2 font-bold text-gray-700">APNG (.png)</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="format" value="gif" class="text-[#00C300] focus:ring-[#00C300]">
+                        <span class="ml-2 font-bold text-gray-700">GIF (.gif)</span>
+                    </label>
+                </div>
+
+                <div class="pt-2 space-y-2">
+                    <button id="export-btn" disabled class="w-full py-3.5 px-4 font-black text-white bg-[#00C300] hover:bg-[#009900] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all duration-200 text-center text-base active:scale-[0.98]">
+                        ⚡ アニメスタンプを合成して保存
+                    </button>
+                    <button id="reset-btn" class="w-full py-2.5 px-4 font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 hover:text-gray-700 rounded-xl border border-gray-300 transition-all duration-200 text-center text-sm active:scale-[0.98]">
+                        🔄 読み込んだ素材と位置をリセット
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+                <h2 class="text-sm md:text-base font-bold text-gray-700 border-b pb-2 mb-4 w-full text-left flex justify-between items-center">
+                    <span>🎬 仕上がりリアルタイムプレビュー</span>
+                    <span id="drag-hint-text" class="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded">🏃‍♂️ キャラクターをドラッグ中</span>
+                </h2>
+                
+                <div id="preview-box" class="preview-container border-2 border-dashed border-[#0071e3] rounded-lg overflow-hidden bg-white shadow-inner select-none cursor-move flex justify-center items-center">
+                    <canvas id="preview-canvas" width="320" height="270" style="width: 320px; height: 270px;"></canvas>
+                </div>
+                
+                <p class="text-xs text-gray-400 mt-4 text-center leading-relaxed">
+                    ※選択された対象を枠内でドラッグ、またはスライダーを調整してください。<br>
+                    等速均一規格で成形するため、LINE審査エラーを完全に回避し実機で自動ループします。
+                </p>
+            </div>
+            
+        </div>
+        
+    </main>
+
+    <footer class="max-w-6xl mx-auto px-4 py-6 text-xs text-gray-400 border-t border-gray-100 mt-12 flex flex-col sm:flex-row justify-end items-center sm:items-end gap-2">
+        <p class="leading-none pb-0.5">© 2026 <a href="https://store.line.me/search/ja?q=arakakiai" target="_blank" rel="noopener noreferrer" class="text-[#00C300] hover:text-[#009900] transition font-bold no-underline">ARAKAKIAIworks</a>. All Rights Reserved.<a href="https://note.com/arakakiai_works" target="_blank">🗒️</a></p>
+        <img src="bottom-right.png" alt="シーサーロゴ" class="h-9 w-auto object-contain block">
+    </footer>
+
+    <script>
+        let charFile = null;
+        let activeMode = 'char'; // 'char' または 'bg'
+        
+        // キャラクター変形データ
+        let currentX = 0;
+        let currentY = 0;
+        let currentScale = 1.0;
+        
+        // 背景画像変形データ
+        let currentBgX = 0;
+        let currentBgY = 0;
+        let currentBgScale = 1.0;
+
+        // キャラ用アニメーションメモリ
+        let charImgData = null;
+        let charFrames = [];
+        let frameDelays = [];
+        let totalDuration = 0;
+        
+        // 背景用アニメーションメモリ
+        let bgImgData = null;
+        let bgFrames = [];
+        let bgFrameDelays = [];
+        let bgTotalDuration = 0;
+
+        let animationStartTime = 0;
+        let isLooping = false;
+
+        const charInput = document.getElementById('char-input');
+        const bgInput = document.getElementById('bg-input');
+        const exportBtn = document.getElementById('export-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleValue = document.getElementById('scale-value');
+        const bgScaleSlider = document.getElementById('bg-scale-slider');
+        const bgScaleValue = document.getElementById('bg-scale-value');
+
+        const modeCharBtn = document.getElementById('mode-char-btn');
+        const modeBgBtn = document.getElementById('mode-bg-btn');
+        const dragHintText = document.getElementById('drag-hint-text');
+        const previewBox = document.getElementById('preview-box');
+        const pCanvas = document.getElementById('preview-canvas');
+        const pCtx = pCanvas.getContext('2d');
+
+        // 操作対象の切り替え
+        modeCharBtn.addEventListener('click', () => switchMode('char'));
+        modeBgBtn.addEventListener('click', () => switchMode('bg'));
+
+        function switchMode(mode) {
+            activeMode = mode;
+            if (mode === 'char') {
+                modeCharBtn.className = "py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent";
+                modeBgBtn.className = "py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent";
+                dragHintText.innerText = "🏃‍♂️ キャラクターをドラッグ中";
+                dragHintText.className = "text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded";
+            } else {
+                modeBgBtn.className = "py-2 rounded-lg bg-white text-gray-800 shadow-sm transition border border-transparent";
+                modeCharBtn.className = "py-2 rounded-lg text-gray-500 hover:text-gray-700 transition border border-transparent";
+                dragHintText.innerText = "🖼️ 背景画像をドラッグ中";
+                dragHintText.className = "text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded";
+            }
+        }
+
+        // 背景画像の読み込み
+        bgInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            currentBgX = 0;
+            currentBgY = 0;
+            currentBgScale = 1.0;
+            bgScaleSlider.value = 100;
+            bgScaleValue.innerText = "100%";
+
+            exportBtn.disabled = true;
+            exportBtn.innerText = "⏳ 背景画像を解析中...";
+
+            try {
+                const buffer = await file.arrayBuffer();
+                bgImgData = UPNG.decode(buffer);
+                const bgRgba8 = UPNG.toRGBA8(bgImgData);
+
+                bgFrames = [];
+                bgFrameDelays = [];
+                bgTotalDuration = 0;
+
+                const frameCount = (bgImgData.frames && bgImgData.frames.length > 0) ? bgImgData.frames.length : 1;
+
+                for (let i = 0; i < frameCount; i++) {
+                    const bCanvas = document.createElement('canvas');
+                    bCanvas.width = bgImgData.width;
+                    bCanvas.height = bgImgData.height;
+                    const bCtx = bCanvas.getContext('2d');
+
+                    const bImgData = bCtx.createImageData(bgImgData.width, bgImgData.height);
+                    bImgData.data.set(new Uint8Array(bgRgba8[i]));
+                    bCtx.putImageData(bImgData, 0, 0);
+
+                    bgFrames.push(bCanvas);
+                    
+                    const delay = (bgImgData.frames && bgImgData.frames[i]) ? bgImgData.frames[i].delay : 100;
+                    bgFrameDelays.push(delay);
+                    
+                    if (bgImgData.frames && bgImgData.frames.length > 1) {
+                        bgTotalDuration += delay;
+                    }
+                }
+
+                if (!isLooping) {
+                    animationStartTime = performance.now();
+                    isLooping = true;
+                    startPreviewLoop();
+                }
+            } catch (err) {
+                alert("背景画像の解析に失敗しました: " + err.message);
+            }
+            checkReady();
+        });
+
+        // キャラクター画像の読み込み
+        charInput.addEventListener('change', async (e) => {
+            charFile = e.target.files[0];
+            if (!charFile) return;
+            
+            currentX = 0;
+            currentY = 0;
+            currentScale = 1.0;
+            scaleSlider.value = 100;
+            scaleValue.innerText = "100%";
+            
+            exportBtn.disabled = true;
+            exportBtn.innerText = "⏳ キャラクターを解析中...";
+            
+            try {
+                const buffer = await charFile.arrayBuffer();
+                charImgData = UPNG.decode(buffer);
+                const rgba8 = UPNG.toRGBA8(charImgData);
+                
+                charFrames = [];
+                frameDelays = [];
+                totalDuration = 0;
+                
+                const frameCount = (charImgData.frames && charImgData.frames.length > 0) ? charImgData.frames.length : 1;
+                
+                for (let i = 0; i < frameCount; i++) {
+                    const fCanvas = document.createElement('canvas');
+                    fCanvas.width = charImgData.width;
+                    fCanvas.height = charImgData.height;
+                    const fCtx = fCanvas.getContext('2d');
+                    
+                    const fImgData = fCtx.createImageData(charImgData.width, charImgData.height);
+                    fImgData.data.set(new Uint8Array(rgba8[i]));
+                    fCtx.putImageData(fImgData, 0, 0);
+                    
+                    charFrames.push(fCanvas);
+                    const delay = (charImgData.frames && charImgData.frames[i]) ? charImgData.frames[i].delay : 100;
+                    frameDelays.push(delay);
+                    if (charImgData.frames && charImgData.frames.length > 1) {
+                        totalDuration += delay;
+                    }
+                }
+                
+                if (!isLooping) {
+                    animationStartTime = performance.now();
+                    isLooping = true;
+                    startPreviewLoop();
+                }
+            } catch (err) {
+                alert("キャラクターAPNGの解析に失敗しました: " + err.message);
+            }
+            checkReady();
+        });
+
+        // キャラスライダー調整
+        scaleSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            scaleValue.innerText = val + "%";
+            currentScale = val / 100;
+        });
+
+        // 背景スライダー調整
+        bgScaleSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            bgScaleValue.innerText = val + "%";
+            currentBgScale = val / 100;
+        });
+
+        // Wアニメーション同期推移ループ
+        function startPreviewLoop() {
+            if (!isLooping) return;
+            
+            pCtx.clearRect(0, 0, 320, 270);
+            const nowTime = performance.now();
+            
+            // 1. 背景のリアルタイム描画
+            if (bgFrames.length > 0 && bgImgData) {
+                let currentBgFrameIdx = 0;
+                if (bgFrames.length > 1 && bgTotalDuration > 0) {
+                    const elapsedBg = (nowTime - animationStartTime) % bgTotalDuration;
+                    let sumDelayBg = 0;
+                    for (let i = 0; i < bgFrameDelays.length; i++) {
+                        sumDelayBg += bgFrameDelays[i];
+                        if (elapsedBg < sumDelayBg) {
+                            currentBgFrameIdx = i;
+                            break;
+                        }
+                    }
+                }
+                
+                const frameBgCanvas = bgFrames[currentBgFrameIdx];
+                const bgW = bgImgData.width;
+                const bgH = bgImgData.height;
+                const bgRatio = Math.min(320 / bgW, 270 / bgH);
+                const bgFitW = bgW * bgRatio;
+                const bgFitH = bgH * bgRatio;
+                const bgInitX = (320 - bgFitW) / 2;
+                const bgInitY = (270 - bgFitH) / 2;
+                
+                const bgFinalW = bgFitW * currentBgScale;
+                const bgFinalH = bgFitH * currentBgScale;
+                const bgCenterX = bgInitX + (bgFitW / 2) + currentBgX;
+                const bgCenterY = bgInitY + (bgFitH / 2) + currentBgY;
+                const bgFinalX = bgCenterX - (bgFinalW / 2);
+                const bgFinalY = bgCenterY - (bgFinalH / 2);
+                
+                pCtx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+            }
+            
+            // 2. キャラクターのリアルタイム描画
+            if (charFrames.length > 0 && charImgData) {
+                let currentFrameIdx = 0;
+                if (charFrames.length > 1 && totalDuration > 0) {
+                    const elapsed = (nowTime - animationStartTime) % totalDuration;
+                    let sumDelay = 0;
+                    for (let i = 0; i < frameDelays.length; i++) {
+                        sumDelay += frameDelays[i];
+                        if (elapsed < sumDelay) {
+                            currentFrameIdx = i;
+                            break;
+                        }
+                    }
+                }
+                
+                const frameCanvas = charFrames[currentFrameIdx];
+                const charW = charImgData.width;
+                const charH = charImgData.height;
+                const charRatio = Math.min(320 / charW, 270 / charH);
+                const charFitW = charW * charRatio;
+                const charFitH = charH * charRatio;
+                const charInitX = (320 - charFitW) / 2;
+                const charInitY = (270 - charFitH) / 2;
+                
+                const charFinalW = charFitW * currentScale;
+                const charFinalH = charFitH * currentScale;
+                const charCenterX = charInitX + (charFitW / 2) + currentX;
+                const charCenterY = charInitY + (charFitH / 2) + currentY;
+                const finalX = charCenterX - (charFinalW / 2);
+                const finalY = charCenterY - (charFinalH / 2);
+                
+                pCtx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
+            }
+            
+            requestAnimationFrame(startPreviewLoop);
+        }
+
+        function checkReady() {
+            if (charFile && charFrames.length > 0 && bgFrames.length > 0) {
+                exportBtn.disabled = false;
+                exportBtn.innerText = "⚡ アニメスタンプを合成して保存";
+            } else {
+                exportBtn.disabled = true;
+                if (!charFile) {
+                    exportBtn.innerText = "⚡ キャラクターを読み込んでください";
+                } else if (bgFrames.length === 0) {
+                    exportBtn.innerText = "⚡ 背景画像を読み込んでください";
+                } else {
+                    exportBtn.innerText = "⚡ 素材を両方読み込んでください";
+                }
+            }
+        }
+
+        // 🔄 リセットボタンの全データ初期化
+        resetBtn.addEventListener('click', () => {
+            charInput.value = '';
+            bgInput.value = '';
+            charFile = null;
+
+            currentX = 0;
+            currentY = 0;
+            currentScale = 1.0;
+            currentBgX = 0;
+            currentBgY = 0;
+            currentBgScale = 1.0;
+
+            charImgData = null;
+            charFrames = [];
+            frameDelays = [];
+            totalDuration = 0;
+
+            bgImgData = null;
+            bgFrames = [];
+            bgFrameDelays = [];
+            bgTotalDuration = 0;
+
+            isLooping = false;
+
+            scaleSlider.value = 100;
+            scaleValue.innerText = "100%";
+            bgScaleSlider.value = 100;
+            bgScaleValue.innerText = "100%";
+
+            switchMode('char');
+            pCtx.clearRect(0, 0, 320, 270);
+            checkReady();
+        });
+
+        // 🔥【LINE等速絶対規格化システム】合成 ＆ ダウンロード
+        exportBtn.addEventListener('click', async () => {
+            exportBtn.disabled = true;
+            exportBtn.innerText = "🎨 LINE等速規格にリサイズ成形中...";
+            
+            try {
+                const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+                const targetTotalMs = parseInt(document.querySelector('input[name="target-seconds"]:checked').value);
+                
+                const outCanvas = document.createElement('canvas');
+                outCanvas.width = 320;
+                outCanvas.height = 270;
+                const ctx = outCanvas.getContext('2d');
+                
+                const outBufs = [];
+                const dels = [];
+                const gifFrames = [];
+                
+                let bgFinalX = 0, bgFinalY = 0, bgFinalW = 320, bgFinalH = 270;
+                if (bgImgData) {
+                    const bgW = bgImgData.width;
+                    const bgH = bgImgData.height;
+                    const bgRatio = Math.min(320 / bgW, 270 / bgH);
+                    const bgFitW = bgW * bgRatio;
+                    const bgFitH = bgH * bgRatio;
+                    const bgInitX = (320 - bgFitW) / 2;
+                    const bgInitY = (270 - bgFitH) / 2;
+                    bgFinalW = bgFitW * currentBgScale;
+                    bgFinalH = bgFitH * currentBgScale;
+                    const bgCenterX = bgInitX + (bgFitW / 2) + currentBgX;
+                    const bgCenterY = bgInitY + (bgFitH / 2) + currentBgY;
+                    bgFinalX = bgCenterX - (bgFinalW / 2);
+                    bgFinalY = bgCenterY - (bgFinalH / 2);
+                }
+
+                let finalX = 0, finalY = 0, charFinalW = 320, charFinalH = 270;
+                if (charImgData) {
+                    const charW = charImgData.width;
+                    const charH = charImgData.height;
+                    const charRatio = Math.min(320 / charW, 270 / charH);
+                    const charFitW = charW * charRatio;
+                    const charFitH = charH * charRatio;
+                    const charInitX = (320 - charFitW) / 2;
+                    const charInitY = (270 - charFitH) / 2;
+                    charFinalW = charFitW * currentScale;
+                    charFinalH = charFitH * currentScale;
+                    const charCenterX = charInitX + (charFitW / 2) + currentX;
+                    const charCenterY = charInitY + (charFitH / 2) + currentY;
+                    finalX = charCenterX - (charFinalW / 2);
+                    finalY = charCenterY - (charFinalH / 2);
+                }
+
+                const loopLimit = (charFrames.length > 0) ? charFrames.length : 1;
+                
+                // 💡【最重要：等速時間割り振りシステム】
+                // 目標の総再生時間（例: 2000ms）を全フレーム数で完全に均等に割る
+                const exactDelay = Math.floor(targetTotalMs / loopLimit);
+                
+                // 切り捨てられた端数の余りを計算
+                let remainder = targetTotalMs - (exactDelay * loopLimit);
+
+                let charElapsed = 0;
+
+                for (let i = 0; i < loopLimit; i++) {
+                    ctx.clearRect(0, 0, 320, 270);
+                    
+                    let exportBgFrameIdx = 0;
+                    if (bgFrames.length > 1 && bgTotalDuration > 0) {
+                        const elapsedBg = charElapsed % bgTotalDuration;
+                        let sumDelayBg = 0;
+                        for (let j = 0; j < bgFrameDelays.length; j++) {
+                            sumDelayBg += bgFrameDelays[j];
+                            if (elapsedBg < sumDelayBg) {
+                                exportBgFrameIdx = j;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (bgFrames.length > 0) {
+                        const frameBgCanvas = bgFrames[exportBgFrameIdx];
+                        ctx.drawImage(frameBgCanvas, bgFinalX, bgFinalY, bgFinalW, bgFinalH);
+                    }
+                    
+                    if (charFrames.length > 0) {
+                        const frameCanvas = charFrames[i];
+                        ctx.drawImage(frameCanvas, finalX, finalY, charFinalW, charFinalH);
+                    }
+                    
+                    const outImgData = ctx.getImageData(0, 0, 320, 270);
+                    outBufs.push(outImgData.data.buffer);
+                    gifFrames.push(outCanvas.toDataURL());
+
+                    // 1フレームずつの表示速度を設定。余りの端数は最初の数フレームに1msずつ均等に割り振って完全等速にする
+                    let frameDelayValue = exactDelay;
+                    if (remainder > 0) {
+                        frameDelayValue += 1;
+                        remainder--;
+                    }
+                    dels.push(frameDelayValue);
+
+                    // もともとの速度をシミュレートするための経過時間
+                    charElapsed += (charImgData && charImgData.frames) ? charImgData.frames[i].delay : 100;
+                }
+
+                const baseName = charFile ? charFile.name.replace(/\.[^/.]+$/, "") : "combined";
+                
+                if (selectedFormat === 'apng') {
+                    // 全フレーム320x270の均一規格（256）で出力
+                    const apngBuf = UPNG.encode(outBufs, 320, 270, 256, dels);
+                    
+                    // LINE公式仕様である「0 (エンドレス無限ループ設定)」にバイナリを固定
+                    // 1周の合計時間が完璧に2.00秒等であれば、0(無限)にすることで実機でもシミュレータでもずっとループし続けます！
+                    const view = new DataView(apngBuf);
+                    for (let i = 0; i < apngBuf.byteLength - 8; i++) {
+                        if (view.getUint32(i) === 0x6163544C) { 
+                            view.setUint32(i + 8, 0); // num_plays を 0 にして実機自動エンドレス再生を強制
+                            break;
+                        }
+                    }
+                    
+                    const blob = new Blob([apngBuf], {type: 'image/png'});
+                    triggerDownload(blob, `${baseName}_fixed.png`);
+                } else {
+                    await new Promise((resolve, reject) => {
+                        gifshot.createGIF({
+                            images: gifFrames,
+                            gifWidth: 320,
+                            gifHeight: 270,
+                            interval: dels[0] / 1000,
+                            numFrames: gifFrames.length,
+                            sampleInterval: 10,
+                            numWorkers: 2,
+                            loop: 0
+                        }, function (obj) {
+                            if (!obj.error) {
+                                const link = document.createElement('a');
+                                link.href = obj.image;
+                                link.download = `${baseName}_fixed.gif`;
+                                link.click();
+                                resolve();
+                            } else {
+                                reject(obj.error);
+                            }
+                        });
+                    });
+                }
+                
+            } catch (err) {
+                alert("エラーが発生しました: " + err.message);
+            }
+            
+            checkReady();
+        });
+
+        function triggerDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // --- ドラッグ＆タッチ操作 ---
+        let isDragging = false;
+        let startX, startY;
+
+        function startDrag(e) {
+            isDragging = true;
+            const pageX = e.pageX || (e.touches && e.touches[0].pageX);
+            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
+            
+            if (activeMode === 'char') {
+                startX = pageX - currentX;
+                startY = pageY - currentY;
+            } else {
+                startX = pageX - currentBgX;
+                startY = pageY - currentBgY;
+            }
+            if(e.touches && e.target === pCanvas) e.preventDefault();
+        }
+
+        function doDrag(e) {
+            if (!isDragging) return;
+            const pageX = e.pageX || (e.touches && e.touches[0].pageX);
+            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
+            
+            if (activeMode === 'char') {
+                currentX = pageX - startX;
+                currentY = pageY - startY;
+            } else {
+                currentBgX = pageX - startX;
+                currentBgY = pageY - startY;
+            }
+        }
+
+        document.getElementById('preview-box').addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        document.getElementById('preview-box').addEventListener('touchstart', startDrag, {passive: false});
+        document.addEventListener('touchmove', doDrag, {passive: false});
+        document.addEventListener('touchend', () => { isDragging = false; });
+    </script>
+</body>
+</html>
